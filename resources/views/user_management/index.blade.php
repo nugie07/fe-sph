@@ -51,6 +51,14 @@
     background-position: right calc(0.375em + 0.1875rem) center;
     background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
 }
+
+/* Custom CSS for reset password button */
+div .action .reset-password {
+    margin-right: 5px;
+}
+div .action .reset-password i {
+    color: #e6ae30;
+}
 </style>
 @endsection
 
@@ -208,7 +216,13 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label">Password *</label>
-                                <input type="password" class="form-control" name="password" required>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" name="password" id="createPassword" readonly required>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="generatePassword()" style="border-radius: 0.5rem;">
+                                        <i data-feather="refresh-cw"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted">Password akan di-generate otomatis (8 karakter)</small>
                                 <div class="invalid-feedback" id="error-password"></div>
                             </div>
                         </div>
@@ -285,14 +299,7 @@
                                 <div class="invalid-feedback" id="edit-error-email"></div>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Password</label>
-                                <input type="password" class="form-control" name="password" id="editPassword" placeholder="Leave blank to keep current password">
-                                <small class="text-muted">Leave blank to keep current password</small>
-                                <div class="invalid-feedback" id="edit-error-password"></div>
-                            </div>
-                        </div>
+
                     </div>
                     <div class="row">
                         <div class="col-md-6">
@@ -359,6 +366,36 @@
         </div>
     </div>
 </div>
+
+<!-- Reset Password Confirmation Modal -->
+<div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetPasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="resetPasswordModalLabel">Confirm Reset Password</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                    <p>Apakah anda yakin untuk mereset password user ini?
+                        Password akan di-generate otomatis  dan akan dikirimkan ke email user.</p>
+                    <div class="alert alert-info">
+                    <strong>User:</strong> <span id="resetPasswordUserName"></span><br>
+                    <strong>Email:</strong> <span id="resetPasswordUserEmail"></span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary rounded-square d-flex align-items-center" data-bs-dismiss="modal" style="border-radius: 0.5rem; min-width: 48px; min-height: 48px;">
+                    <i data-feather="x" style="margin-right: 8px;"></i>
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-success rounded-square d-flex align-items-center" onclick="confirmResetPassword()" style="border-radius: 0.5rem; min-width: 48px; min-height: 48px;">
+                    <i data-feather="refresh-cw" style="margin-right: 8px;"></i>
+                    Reset Password
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @section('scripts')
@@ -374,7 +411,36 @@ let deleteUserId = null;
 let sortBy = '';
 let sortOrder = 'asc';
 
+// Function to generate strong password
+function generatePassword() {
+    const length = 8;
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+    let password = "";
+
+    // Ensure at least one character from each category
+    password += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[Math.floor(Math.random() * 26)]; // Uppercase
+    password += "abcdefghijklmnopqrstuvwxyz"[Math.floor(Math.random() * 26)]; // Lowercase
+    password += "0123456789"[Math.floor(Math.random() * 10)]; // Number
+    password += "!@#$%^&*"[Math.floor(Math.random() * 8)]; // Special character
+
+    // Fill the rest with random characters
+    for (let i = 4; i < length; i++) {
+        password += charset[Math.floor(Math.random() * charset.length)];
+    }
+
+    // Shuffle the password
+    password = password.split('').sort(() => Math.random() - 0.5).join('');
+
+    // Set the password in the input field
+    document.getElementById('createPassword').value = password;
+}
+
 $(document).ready(function() {
+    // Generate initial password when modal opens
+    $('#createUserModal').on('show.bs.modal', function() {
+        generatePassword();
+    });
+
     // Initialize Select2 for role dropdowns
     $('#createRoleSelect').select2({
         placeholder: 'Select a role',
@@ -516,6 +582,11 @@ function populateUsersTable(users) {
                         <li class="edit">
                             <a href="javascript:void(0)" onclick="openEditModal(${user.id})" title="Edit">
                                 <i class="icon-pencil-alt"></i>
+                            </a>
+                        </li>
+                        <li class="reset-password">
+                            <a href="javascript:void(0)" onclick="openResetPasswordModal(${user.id}, '${user.full_name}', '${user.email}')" title="Reset Password">
+                                <i class="fa fa-refresh"></i>
                             </a>
                         </li>
                         <li class="delete">
@@ -835,6 +906,42 @@ function confirmDelete() {
         error: function(xhr) {
             console.error('Error deleting user:', xhr);
             let errorMessage = 'Error deleting user';
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMessage = xhr.responseJSON.message;
+            }
+            showAlert(errorMessage, 'error');
+        },
+        complete: function() {
+            hideLoading();
+        }
+    });
+}
+
+let resetPasswordUserId = null;
+
+function openResetPasswordModal(userId, userName, userEmail) {
+    resetPasswordUserId = userId;
+    $('#resetPasswordUserName').text(userName);
+    $('#resetPasswordUserEmail').text(userEmail);
+    $('#resetPasswordModal').modal('show');
+}
+
+function confirmResetPassword() {
+    if (!resetPasswordUserId) return;
+
+    showLoading();
+
+    $.ajax({
+        url: `/api/user-management/${resetPasswordUserId}/reset-password`,
+        method: 'POST',
+        success: function(response) {
+            $('#resetPasswordModal').modal('hide');
+            showAlert('Password reset successfully! New password has been sent to user email.');
+            resetPasswordUserId = null;
+        },
+        error: function(xhr) {
+            console.error('Error resetting password:', xhr);
+            let errorMessage = 'Error resetting password';
             if (xhr.responseJSON && xhr.responseJSON.message) {
                 errorMessage = xhr.responseJSON.message;
             }

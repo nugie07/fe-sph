@@ -25,6 +25,14 @@ public function login(Request $request)
         ]);
 
         if ($response->failed()) {
+            // Check if request wants JSON response (for AJAX calls)
+            if ($request->expectsJson() || $request->header('Accept') === 'application/json') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid login details'
+                ], 401);
+            }
+
             return back()->withErrors([
                 'login' => 'Email atau password salah.',
             ]);

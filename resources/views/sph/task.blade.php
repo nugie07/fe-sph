@@ -1,5 +1,9 @@
 @extends('layout.master')
 
+@php
+use App\Helpers\PermissionHelper;
+@endphp
+
 @section('css')
 <link rel="stylesheet" type="text/css" href="{{ asset('assets/css/vendors/date-picker.css') }}">
 <link rel="stylesheet" type="text/css" href="{{ asset('assets/css/vendors/owlcarousel.css') }}">
@@ -255,7 +259,15 @@
             ' <span>Loading...</span>'+
           '</td></tr>'
         );
-        $.get('/api/sph/list?status=approvallist')
+        // Add restrict parameter based on permission
+        var restrictParam = '';
+        @if(PermissionHelper::hasActionAccess('sph.menu', 'sph.o.act.restrict', 'sph.o.menu') == 1)
+        restrictParam = '&restrict=1';
+        @else
+        restrictParam = '&restrict=0';
+        @endif
+
+        $.get('/api/sph/list?status=approvallist' + restrictParam)
           .done(function(res){
             $('#card-total_sph').text(res.cards.waiting); // SPH Approval (status=1)
             $('#card-waiting')     .text('-');

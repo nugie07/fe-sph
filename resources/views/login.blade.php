@@ -214,17 +214,6 @@
 
 @section('others_script')
 <script>
-  const form = document.querySelector('.theme-form');
-  const btn = document.getElementById('btn-submit');
-  const spinner = btn.querySelector('.spinner-border');
-  const btnText = btn.querySelector('.btn-text');
-
-  form.addEventListener('submit', function() {
-    btn.setAttribute('disabled', 'disabled'); // disable tombol
-    spinner.classList.remove('d-none'); // tampilkan spinner
-    btnText.textContent = 'Mencoba Login ...'; // ganti text
-  });
-
   // Initialize page on load
   document.addEventListener('DOMContentLoaded', function() {
     generateCaptcha();
@@ -244,10 +233,13 @@
 
     const formData = new FormData(this);
     const submitBtn = document.getElementById('btn-submit');
+    const spinner = submitBtn.querySelector('.spinner-border');
+    const btnText = submitBtn.querySelector('.btn-text');
 
     // Disable submit button and show loading
     submitBtn.disabled = true;
-    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Logging in...';
+    spinner.classList.remove('d-none');
+    btnText.textContent = 'Mencoba Login...';
 
     fetch('{{ route("login") }}', {
       method: 'POST',
@@ -257,15 +249,44 @@
       },
       body: formData
     })
-    .then(response => {
+            .then(response => {
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+
       if (response.redirected) {
         // Login successful, redirect to home
         window.location.href = response.url;
+        return;
+      }
+
+      // Check if response is JSON
+      const contentType = response.headers.get('content-type');
+      console.log('Content-Type:', contentType);
+
+      if (contentType && contentType.includes('application/json')) {
+        return response.json().then(data => {
+          // Add status to data for error handling
+          data.status = response.status;
+          return data;
+        });
       } else {
-        return response.json();
+        // If not JSON and status is 200, redirect to home (successful login)
+        if (response.status === 200) {
+          window.location.href = '{{ route("home") }}';
+          return;
+        } else {
+          // If not JSON and status is not 200, treat as error
+          return {
+            success: false,
+            message: 'Login failed',
+            status: response.status
+          };
+        }
       }
     })
-    .then(data => {
+        .then(data => {
+      console.log('Response data:', data);
+
       if (data && data.success) {
         // Store data in localStorage
         localStorage.setItem('api_token', data.token);
@@ -277,7 +298,15 @@
 
         // Redirect to home
         window.location.href = '{{ route("home") }}';
+      } else if (data && data.errors) {
+        // Handle validation errors
+        const errorMessages = Object.values(data.errors).flat();
+        showToast(errorMessages.join(', '), 'error');
+      } else if (data && data.status && data.status >= 400) {
+        // Handle HTTP error status
+        showToast(data.message || 'Login failed', 'error');
       } else if (data && data.message) {
+        // Handle any other error message
         showToast(data.message, 'error');
       } else {
         showToast('Login failed', 'error');
@@ -285,12 +314,13 @@
     })
     .catch(error => {
       console.error('Login error:', error);
-      showToast('Terjadi kesalahan saat login', 'error');
+      showToast('Terjadi kesalahan saat login. Silakan coba lagi.', 'error');
     })
     .finally(() => {
       // Re-enable submit button
       submitBtn.disabled = false;
-      submitBtn.innerHTML = 'Login';
+      spinner.classList.add('d-none');
+      btnText.textContent = 'Login';
     });
   });
 

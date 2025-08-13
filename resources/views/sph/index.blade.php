@@ -320,6 +320,14 @@ use App\Helpers\PermissionHelper;
         var params = {};
         if (status) params.status = status;
         if (month) params.month = month;
+
+        // Add restrict parameter based on permission
+        @if(PermissionHelper::hasActionAccess('sph.menu', 'sph.o.act.restrict', 'sph.o.menu') == 1)
+        params.restrict = 1;
+        @else
+        params.restrict = 0;
+        @endif
+
         var qs = $.param(params);
 
         table.clear().draw();
