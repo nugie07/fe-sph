@@ -56,8 +56,8 @@ Route::view('customer-database', 'customer.index')->name('customer-database')->m
 Route::view('oat-configuration', 'oat_configuration.index')->name('oat-configuration')->middleware('permission:master.oat');
 Route::view('master-lokasi', 'master_lokasi.index')->name('master-lokasi')->middleware('permission:master.lokasi');
 Route::view('user-management', 'user_management.index')->name('user-management')->middleware('permission:admin.user');
-Route::view('activity-logging', 'activity_logging.index')->name('activity-logging')->middleware('permission:admin.logging');
 Route::view('permission-management', 'user_management.permission')->name('permission-management')->middleware('permission:admin.menu');
+Route::view('user-log', 'user_management.userlog')->name('user-log')->middleware('permission:admin.logging');
 Route::view('invoice', 'invoice.index')->name('invoice')->middleware('permission:fin.menu');
 
 

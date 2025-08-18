@@ -24,7 +24,7 @@
             color: white;
             padding: 15px;
             border-radius: 8px;
-            text-align: center;
+            text-align: center;w
             margin-bottom: 10px;
             height: 100px;
             display: flex;
@@ -377,7 +377,8 @@
                     {
                         data: 'status',
                         render: function(data) {
-                            return data === 1 ? '<span class="badge bg-success">Active</span>' :
+                            console.log('Status data:', data, 'Type:', typeof data, 'Value:', data);
+                            return data == 1 ? '<span class="badge bg-success">Active</span>' :
                                    '<span class="badge bg-danger">Inactive</span>';
                         }
                     },

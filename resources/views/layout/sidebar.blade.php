@@ -110,7 +110,7 @@ use App\Helpers\PermissionHelper;
                 <li><a href="{{route('user-management')}}">User Management</a></li>
                 @endif
                 @if(PermissionHelper::hasPermission('admin.logging'))
-                <li><a href="{{route('activity-logging')}}">Activity Logging</a></li>
+                <li><a href="{{route('user-log')}}">Activity Logging</a></li>
                 @endif
                 @if(PermissionHelper::hasPermission('admin.menu'))
                 <li><a href="{{route('permission-management')}}">Permission Management</a></li>
