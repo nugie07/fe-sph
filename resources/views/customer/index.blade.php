@@ -24,7 +24,7 @@
             color: white;
             padding: 15px;
             border-radius: 8px;
-            text-align: center;w
+            text-align: center;
             margin-bottom: 10px;
             height: 100px;
             display: flex;
@@ -203,32 +203,40 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="pic_name" class="form-label">PIC Name</label>
-                                <input type="text" class="form-control" id="pic_name" name="pic_name" required>
+                                <input type="text" class="form-control" id="pic_name" name="pic_name">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="pic_contact" class="form-label">PIC Contact</label>
-                                <input type="text" class="form-control" id="pic_contact" name="pic_contact" required>
+                                <input type="text" class="form-control" id="pic_contact" name="pic_contact">
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="email" class="form-label">Email</label>
-                                <input type="email" class="form-control" id="email" name="email" required>
+                                <input type="email" class="form-control" id="email" name="email">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="status" class="form-label">Status</label>
+                                <select class="form-control" id="status" name="status" required>
+                                    <option value="">Pilih Status</option>
+                                    <option value="1">Active</option>
+                                    <option value="0">Inactive</option>
+                                </select>
                             </div>
                         </div>
 
                         <div class="mb-3">
                             <label for="address" class="form-label">Address</label>
-                            <textarea class="form-control" id="address" name="address" rows="3" required></textarea>
+                            <textarea class="form-control" id="address" name="address" rows="3"></textarea>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="bill_to" class="form-label">Bill To</label>
-                                <textarea class="form-control" id="bill_to" name="bill_to" rows="3" required></textarea>
+                                <textarea class="form-control" id="bill_to" name="bill_to" rows="3" ></textarea>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="ship_to" class="form-label">Ship To</label>
-                                <textarea class="form-control" id="ship_to" name="ship_to" rows="3" required></textarea>
+                                <textarea class="form-control" id="ship_to" name="ship_to" rows="3"></textarea>
                             </div>
                         </div>
                     </div>
@@ -256,7 +264,7 @@
         let customerTable;
         let isEditMode = false;
 
-                $(document).ready(function() {
+        $(document).ready(function() {
             // Initialize DataTable
             initializeDataTable();
 
@@ -301,30 +309,31 @@
         function initializeDataTable() {
             customerTable = $('#customer-table').DataTable({
                 processing: true,
-                serverSide: false,
+                serverSide: true, // PENTING: Mengubah ini menjadi true
                 ajax: {
                     url: '/api/customer-database',
                     type: 'GET',
                     data: function(d) {
-                        const params = {};
+                        const params = {
+                            draw: d.draw,
+                            start: d.start,
+                            length: d.length,
+                            // DataTables server-side will automatically send 'draw', 'start', 'length', and 'search' parameters.
+                            // We only need to add our custom filters.
+                        };
 
-                        // Add search parameter if not empty (prioritas utama)
                         const searchValue = $('#company-search').val();
                         if (searchValue && searchValue.trim() !== '') {
                             params.search = searchValue.trim();
-                            return params; // Hanya kirim search parameter
                         }
 
-                        // Jika tidak ada search, tambahkan parameter lainnya
-                        params.page = (d.start / d.length) + 1;
-                        params.per_page = d.length;
-                        params.status = 1; // Only active records
-
-                        // Add type parameter if selected
                         const typeFilter = $('#type-filter').val();
                         if (typeFilter && typeFilter !== '') {
                             params.type = typeFilter;
                         }
+
+                        // Add a 'status' parameter
+                        params.status = 1; // Only active records
 
                         return params;
                     },
@@ -343,6 +352,8 @@
                             }
                             $('#total-customers').text(totalCustomers);
                         }
+                        // For server-side processing, DataTables expects an object with 'data', 'recordsTotal', and 'recordsFiltered'.
+                        // Make sure your API response returns these fields.
                         return json.data || [];
                     }
                 },
@@ -350,7 +361,8 @@
                     {
                         data: null,
                         render: function (data, type, row, meta) {
-                            return meta.row + 1;
+                            // This calculates the row number based on the current page and page length.
+                            return meta.row + meta.settings._iDisplayStart + 1;
                         },
                         orderable: false,
                         searchable: false
@@ -373,11 +385,10 @@
                     },
                     { data: 'pic_name' },
                     { data: 'pic_contact' },
-                                        { data: 'email' },
+                    { data: 'email' },
                     {
                         data: 'status',
                         render: function(data) {
-                            console.log('Status data:', data, 'Type:', typeof data, 'Value:', data);
                             return data == 1 ? '<span class="badge bg-success">Active</span>' :
                                    '<span class="badge bg-danger">Inactive</span>';
                         }
@@ -443,6 +454,7 @@
                 $('#pic_name').val(customerData.pic_name);
                 $('#pic_contact').val(customerData.pic_contact);
                 $('#email').val(customerData.email);
+                $('#status').val(customerData.status);
                 $('#bill_to').val(customerData.bill_to);
                 $('#ship_to').val(customerData.ship_to);
             } else {
@@ -460,9 +472,6 @@
                     // Clear existing options except the first one
                     $typeSelect.find('option:not(:first)').remove();
 
-                    console.log('API Response:', response); // Debug log
-
-                    // Handle different response structures
                     let data = response;
                     if (response && response.data) {
                         data = response.data;
@@ -470,7 +479,6 @@
 
                     if (data && Array.isArray(data)) {
                         data.forEach(function(item) {
-                            console.log('Processing item:', item); // Debug log
                             $typeSelect.append(`<option value="${item.value}">${item.value}</option>`);
                         });
                     }
@@ -487,9 +495,6 @@
                     // Clear existing options except the first one
                     $typeFilterSelect.find('option:not(:first)').remove();
 
-                    console.log('Filter API Response:', response); // Debug log
-
-                    // Handle different response structures
                     let data = response;
                     if (response && response.data) {
                         data = response.data;
@@ -497,7 +502,6 @@
 
                     if (data && Array.isArray(data)) {
                         data.forEach(function(item) {
-                            console.log('Processing filter item:', item); // Debug log
                             $typeFilterSelect.append(`<option value="${item.value}">${item.value}</option>`);
                         });
                     }
@@ -523,6 +527,7 @@
                 pic_name: $('#pic_name').val(),
                 pic_contact: $('#pic_contact').val(),
                 email: $('#email').val(),
+                status: $('#status').val(),
                 bill_to: $('#bill_to').val(),
                 ship_to: $('#ship_to').val()
             };
