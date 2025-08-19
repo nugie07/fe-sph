@@ -165,11 +165,8 @@
                                     <tr>
                                         <th>No</th>
                                         <th>Location</th>
-                                        <th>Detail</th>
-                                        <th>PIC Name</th>
-                                        <th>PIC Contact</th>
                                         <th>Qty</th>
-                                        <th>Price</th>
+                                        <th>OAT</th>
                                         <th>Created At</th>
                                         <th>Action</th>
                                     </tr>
@@ -202,29 +199,15 @@
                                 <input type="text" class="form-control" id="location" name="location" required>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="pic_name" class="form-label">PIC Name</label>
-                                <input type="text" class="form-control" id="pic_name" name="pic_name" required>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="pic_contact" class="form-label">PIC Contact</label>
-                                <input type="text" class="form-control" id="pic_contact" name="pic_contact" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
                                 <label for="qty" class="form-label">Qty</label>
-                                <input type="number" class="form-control" id="qty" name="qty" required>
+                                <input type="text" class="form-control" id="qty" name="qty" required>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="price" class="form-label">Price</label>
-                                <input type="number" class="form-control" id="price" name="price" required>
+                                <label for="oat" class="form-label">OAT</label>
+                                <input type="text" class="form-control" id="oat" name="oat" required>
                             </div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="detail" class="form-label">Detail</label>
-                            <textarea class="form-control" id="detail" name="detail" rows="3" required></textarea>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -357,23 +340,15 @@
                     },
                     { data: 'location' },
                     {
-                        data: 'detail',
-                        render: function(data) {
-                            return data ? (data.length > 50 ? data.substring(0, 50) + '...' : data) : '-';
-                        }
-                    },
-                    { data: 'pic_name' },
-                    { data: 'pic_contact' },
-                    {
                         data: 'qty',
                         render: function(data) {
-                            return data ? data.toLocaleString('id-ID') : '-';
+                            return data || '-';
                         }
                     },
                     {
-                        data: 'price',
+                        data: 'oat',
                         render: function(data) {
-                            return data ? 'Rp ' + data.toLocaleString('id-ID') : '-';
+                            return data || '-';
                         }
                     },
                     {
@@ -439,11 +414,8 @@
                 $('#oat_id').val(oatData.id);
                 $('#cust_id').val(oatData.cust_id);
                 $('#location').val(oatData.location);
-                $('#detail').val(oatData.detail);
-                $('#pic_name').val(oatData.pic_name);
-                $('#pic_contact').val(oatData.pic_contact);
                 $('#qty').val(oatData.qty);
-                $('#price').val(oatData.price);
+                $('#oat').val(oatData.oat);
             } else {
                 $('#oatForm')[0].reset();
                 $('#oat_id').val('');
@@ -463,11 +435,8 @@
             const formData = {
                 cust_id: $('#cust_id').val(),
                 location: $('#location').val(),
-                detail: $('#detail').val(),
-                pic_name: $('#pic_name').val(),
-                pic_contact: $('#pic_contact').val(),
                 qty: $('#qty').val(),
-                price: $('#price').val()
+                oat: $('#oat').val()
             };
 
             const oatId = $('#oat_id').val();
@@ -482,7 +451,7 @@
                 },
                 body: JSON.stringify(formData)
             })
-            .then(response => response.json())
+                        .then(response => response.json())
             .then(data => {
                 if (data.success) {
                     $('#oatModal').modal('hide');
