@@ -403,8 +403,8 @@ $(document).ready(function() {
 
         const poRequest = $.get('/api/delivery-request/po-list');
         const transporterRequest = $.get('/api/transporter');
-        const wilayahRequest = $.get('/api/master-lov/children', { parent_code: 'CODE_MMTEI_LOKASI' });
-
+        //const wilayahRequest = $.get('/api/master-lov/children', { parent_code: 'CODE_MMTEI_LOKASI' });
+        const wilayahRequest  = $.get('/api/master-wilayah/request');
         poRequest.done(res => {
             $('#select-po').html('<option value="">Pilih PO</option>');
             res.data.forEach(po => {

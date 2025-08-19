@@ -9,6 +9,47 @@
     border-radius: 8px;
     padding: 20px;
     margin-bottom: 20px;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+/* Sticky header for role selection */
+.sticky-role-header {
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 1000;
+    padding: 20px;
+    border-bottom: 1px solid #e9ecef;
+    margin: 0 -20px 20px -20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    width: calc(100% + 40px);
+}
+
+/* Scrollable permissions section */
+.scrollable-permissions {
+    max-height: calc(100vh - 300px);
+    overflow-y: auto;
+    padding: 0 10px 0 0;
+}
+
+/* Custom scrollbar for permissions section */
+.scrollable-permissions::-webkit-scrollbar {
+    width: 8px;
+}
+
+.scrollable-permissions::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.scrollable-permissions::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.scrollable-permissions::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
 }
 
 .permission-grid {
@@ -103,6 +144,16 @@
     justify-content: center;
     z-index: 10;
 }
+
+/* Ensure proper container spacing */
+.container-fluid {
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
+.card-body {
+    overflow-x: hidden;
+}
 </style>
 @endsection
 
@@ -122,10 +173,6 @@
             </div>
         </div>
     </div>
-</div>
-
-<!-- Container-fluid starts-->
-<div class="container-fluid">
     <div class="row">
         <div class="col-sm-12">
             <div class="card">
@@ -134,28 +181,30 @@
                     <span>Kelola akses permission untuk setiap role yang ada dalam sistem.</span>
                 </div>
                 <div class="card-body">
-                    <!-- Role Selection -->
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <label class="form-label">Pilih Role *</label>
-                            <select class="form-control" id="roleSelect" style="border-radius: 0.5rem;">
-                                <option value="">-- Pilih Role --</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6 d-flex align-items-end">
-                            <button type="button" class="btn btn-success add-role-btn me-2" onclick="openAddRoleModal()" style="border-radius: 0.25rem;">
-                                <span class="btn-text">
-                                    <i data-feather="plus"></i>
-                                    Add Role
-                                </span>
-                            </button>
-                            <button type="button" class="btn btn-primary save-permissions-btn" id="savePermissionsBtn" onclick="savePermissions()" disabled>
-                                <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                                <span class="btn-text">
-                                    <i data-feather="save"></i>
-                                    Simpan Permissions
-                                </span>
-                            </button>
+                    <!-- Sticky Role Selection Header -->
+                    <div class="sticky-role-header">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">Pilih Role *</label>
+                                <select class="form-control" id="roleSelect" style="border-radius: 0.5rem;">
+                                    <option value="">-- Pilih Role --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 d-flex align-items-end">
+                                <button type="button" class="btn btn-success add-role-btn me-2" onclick="openAddRoleModal()" style="border-radius: 0.25rem;">
+                                    <span class="btn-text">
+                                        <i data-feather="plus"></i>
+                                        Add Role
+                                    </span>
+                                </button>
+                                <button type="button" class="btn btn-primary save-permissions-btn" id="savePermissionsBtn" onclick="savePermissions()" disabled>
+                                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                                    <span class="btn-text">
+                                        <i data-feather="save"></i>
+                                        Simpan Permissions
+                                    </span>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -169,32 +218,34 @@
                             </div>
                         </div>
 
-                        <div class="permission-card">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h5 class="mb-0">
-                                    <i data-feather="list"></i>
-                                    Available Permissions
-                                </h5>
-                                <div>
-                                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="selectAllPermissions()" style="border-radius: 0.5rem;">
-                                        <i data-feather="check-square"></i>
-                                        Select All
-                                    </button>
-                                    <button type="button" class="btn btn-outline-secondary btn-sm ms-2" onclick="deselectAllPermissions()" style="border-radius: 0.5rem;">
-                                        <i data-feather="square"></i>
-                                        Deselect All
-                                    </button>
+                        <div class="scrollable-permissions">
+                            <div class="permission-card">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 class="mb-0">
+                                        <i data-feather="list"></i>
+                                        Available Permissions
+                                    </h5>
+                                    <div>
+                                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="selectAllPermissions()" style="border-radius: 0.5rem;">
+                                            <i data-feather="check-square"></i>
+                                            Select All
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm ms-2" onclick="deselectAllPermissions()" style="border-radius: 0.5rem;">
+                                            <i data-feather="square"></i>
+                                            Deselect All
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div class="permission-grid" id="permissionsGrid">
-                                <!-- Permissions will be populated here -->
+                                <div class="permission-grid" id="permissionsGrid">
+                                    <!-- Permissions will be populated here -->
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Empty State -->
-                    <div id="emptyState" class="text-center py-5">
+                    <div id="emptyState" class="text-center py-5 px-3">
                         <i data-feather="shield-off" style="width: 64px; height: 64px; color: #6c757d;"></i>
                         <h5 class="mt-3 text-muted">Pilih Role untuk Melihat Permissions</h5>
                         <p class="text-muted">Silakan pilih role dari dropdown di atas untuk mengelola permissions.</p>

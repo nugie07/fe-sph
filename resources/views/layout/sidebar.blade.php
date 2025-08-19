@@ -78,6 +78,7 @@ use App\Helpers\PermissionHelper;
                 @if(PermissionHelper::hasSubMenuAccess('log.menu', 'log.drs.menu'))
                 <li><a href="{{route('delivery_note')}}">Pembuatan DN No</a></li>
                 @endif
+
               </ul>
             </li>
             @endif
@@ -97,6 +98,12 @@ use App\Helpers\PermissionHelper;
                 @endif
                 @if(PermissionHelper::hasPermission('master.lokasi'))
                 <li><a href="{{route('master-lokasi')}}">Master Lokasi</a></li>
+                @endif
+                @if(PermissionHelper::hasPermission('master.wilayah'))
+                <li><a href="{{route('master-wilayah')}}">Master Wilayah</a></li>
+                @endif
+                @if(PermissionHelper::hasPermission('master.engine'))
+                <li><a href="{{route('master-engine')}}">Approval Workflow</a></li>
                 @endif
               </ul>
             </li>
@@ -120,6 +127,7 @@ use App\Helpers\PermissionHelper;
             @endif
 
             {{-- Menu SPH End disini
+
             <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title" href="javascript:void(0)"><i data-feather="airplay"></i><span class="lan-6">Widgets</span></a>
               <ul class="sidebar-submenu">
                 <li><a href="{{ route('general_widget') }}">General</a></li>

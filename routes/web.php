@@ -55,10 +55,13 @@ Route::view('vendor-database', 'vendor.index')->name('vendor-database')->middlew
 Route::view('customer-database', 'customer.index')->name('customer-database')->middleware('permission:master.customer');
 Route::view('oat-configuration', 'oat_configuration.index')->name('oat-configuration')->middleware('permission:master.oat');
 Route::view('master-lokasi', 'master_lokasi.index')->name('master-lokasi')->middleware('permission:master.lokasi');
+Route::view('master-wilayah', 'master_lokasi.wilayah')->name('master-wilayah')->middleware('permission:master.wilayah');
+Route::view('workflow-engine', 'user_management.workflow')->name('workflow-engine')->middleware('permission:admin.workflow');
 Route::view('user-management', 'user_management.index')->name('user-management')->middleware('permission:admin.user');
 Route::view('permission-management', 'user_management.permission')->name('permission-management')->middleware('permission:admin.menu');
 Route::view('user-log', 'user_management.userlog')->name('user-log')->middleware('permission:admin.logging');
 Route::view('invoice', 'invoice.index')->name('invoice')->middleware('permission:fin.menu');
+Route::view('master-engine', 'user_management.workflow')->name('master-engine')->middleware('permission:master.engine');
 
 
 Route::get('/invoice/create', [AuthController::class, 'createInvoice'])->name('invoices.create');
