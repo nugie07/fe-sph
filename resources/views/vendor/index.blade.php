@@ -195,23 +195,20 @@
                                 </select>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="nama" class="form-label">Nama</label>
-                                <input type="text" class="form-control" id="nama" name="nama" required>
-
+                                <label for="format" class="form-label">Format</label>
+                                <input type="text" class="form-control" id="format" name="format" required>
+                            </div>
                         </div>
+                        <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="alias" class="form-label">Alias</label>
                                 <input type="text" class="form-control" id="alias" name="alias" required>
                             </div>
-
-
-
                             <div class="col-md-6 mb-3">
-                                <label for="format" class="form-label">Format</label>
-                                <input type="text" class="form-control" id="format" name="format" readonly required>
+                                <label for="nama" class="form-label">Nama</label>
+                                <input type="text" class="form-control" id="nama" name="nama" required>
                             </div>
                         </div>
-
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="pic" class="form-label">PIC</label>
@@ -301,11 +298,6 @@
             // Load tipe options when modal is shown
             $('#vendorModal').on('show.bs.modal', function() {
                 loadTipeOptions();
-            });
-
-            // Auto-generate format when tipe or alias changes
-            $('#tipe, #alias').on('change keyup', function() {
-                generateFormat();
             });
         });
 
@@ -440,6 +432,7 @@
             if (isEditMode && vendorData) {
                 $('#vendor_id').val(vendorData.id);
                 $('#tipe').val(vendorData.tipe);
+                $('#format').val(vendorData.format);
                 $('#alias').val(vendorData.alias);
                 $('#nama').val(vendorData.nama);
                 $('#pic').val(vendorData.pic);
@@ -447,14 +440,9 @@
                 $('#email').val(vendorData.email);
                 $('#address').val(vendorData.address);
                 $('#category').val(vendorData.category);
-                // Generate format after setting tipe and alias
-                setTimeout(function() {
-                    generateFormat();
-                }, 100);
             } else {
                 $('#vendorForm')[0].reset();
                 $('#vendor_id').val('');
-                $('#format').val('');
             }
 
             $('#vendorModal').modal('show');
@@ -485,20 +473,6 @@
                 .fail(function(xhr) {
                     console.error('Failed to load tipe options:', xhr);
                 });
-        }
-
-        function generateFormat() {
-            const tipe = $('#tipe').val();
-            const alias = $('#alias').val();
-
-            if (tipe && alias) {
-                // Format: {NOMOR}/MMTEI-TNL/{BULAN}/{TAHUN}
-                // MMTEI = tipe yang dipilih, TNL = alias
-                const format = `{NOMOR}/${tipe}-${alias}/{BULAN}/{TAHUN}`;
-                $('#format').val(format);
-            } else {
-                $('#format').val('');
-            }
         }
 
         function saveVendor() {
