@@ -1,0 +1,695 @@
+@extends('layout.template')
+
+@section('css')
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    #oat-table {
+      margin-top: 10px;
+    }
+    #oat-table th {
+      background-color: #f8f9fa;
+      font-weight: 600;
+    }
+    .btn-remove-oat {
+      padding: 2px 8px;
+    }
+  </style>
+@endsection
+
+@section('main_content')
+<div class="container-fluid">
+
+
+  <div class="container-fluid form-validate">
+    <div class="row">
+      <div class="col-sm-12">
+        <div class="card">
+          <div class="card-header pb-0">
+            <h4>Form SPH</h4><span class="mt-2">Form untuk membuat SPH - Surat Penawaran Harga dengan Template UMUM</span>
+          </div>
+          <div class="card-body">
+            <form class="needs-validation" id="sph-form" novalidate>
+            <input type="hidden" name="template_id" id="template_id">
+            <input type="hidden" name="sph_id" id="sph_id">
+              <!-- Baris 1 -->
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label">Tipe SPH</label>
+                  <input type="text" class="form-control" name="type_sph" id="type_sph" readonly required>
+
+                  <div class="invalid-feedback">Type SPH is required.</div>
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label">Nama Customer</label>
+                  <input type="text" class="form-control" name="comp_name" id="comp_name" readonly required>
+                  <div class="invalid-feedback">Company Name is required.</div>
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label">Kode SPH</label>
+                  <input type="text" class="form-control" name="kode_sph" id="kode_sph" readonly required>
+                  <div class="invalid-feedback">Kode SPH is required.</div>
+                </div>
+              </div>
+
+              <!-- Baris 2 -->
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label">PIC</label>
+                  <input type="text" class="form-control" name="pic" id="pic" required>
+                  <div class="invalid-feedback">PIC is required.</div>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Contact No</label>
+                  <input type="text" class="form-control" name="contact_no" id="contact_no" required>
+                  <div class="invalid-feedback">Contact No is required.</div>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Email</label>
+                  <input type="text" class="form-control" name="email" id="email" required>
+                  <div class="invalid-feedback">Email is required.</div>
+                </div>
+
+              </div>
+
+
+              <!-- Baris 3 -->
+              <div class="row g-3 mt-2">
+                <div class="col-md-4">
+                  <label class="form-label">Product</label>
+                  <select class="form-select select2" name="product" id="product" required>
+                    <option value="">Pilih Product</option>
+                  </select>
+                  <div class="invalid-feedback">Product is required.</div>
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label">Harga dasar per liter</label>
+                  <input type="text" class="form-control" id="price_liter_display" >
+                  <input type="hidden" name="price_liter" id="price_liter_hidden">
+                  <div class="invalid-feedback">Harga per Liter is required.</div>
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label">Biaya Lokasi</label>
+                  <select class="form-select select2" name="biaya_lokasi" id="biaya_lokasi" required></select>
+                  <div class="invalid-feedback">Biaya Lokasi is required.</div>
+                </div>
+              </div>
+
+              <!-- Tabel Lokasi OAT -->
+              <div class="row g-3 mt-2">
+                <div class="col-md-12">
+                  <label class="form-label fw-bold fs-5">OAT :</label>
+                  <div class="table-responsive">
+                    <table class="table table-bordered" id="oat-table">
+                      <thead>
+                        <tr>
+                          <th style="width: 50%;">Lokasi</th>
+                          <th style="width: 45%;">OAT 10 kl</th>
+                          <th style="width: 5%;">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody id="oat-table-body">
+                        <!-- Rows will be added dynamically -->
+                      </tbody>
+                    </table>
+                  </div>
+                  <button type="button" class="btn btn-sm btn-success mt-2" id="btn-add-oat-row">
+                    <i class="fa fa-plus"></i> Tambah Lokasi
+                  </button>
+                </div>
+              </div>
+
+              <!-- Baris 4 -->
+              <div class="row g-3 mt-2">
+                <div class="col-md-4">
+                  <label class="form-label">PPN</label>
+                  <input type="text" class="form-control" id="ppn_display" readonly>
+                  <input type="hidden" name="ppn" id="ppn_hidden">
+                  <div class="invalid-feedback">PPN is required.</div>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">PBBKB</label>
+                  <input type="text" class="form-control" id="pbbkb_display" readonly>
+                  <input type="hidden" name="pbbkb" id="pbbkb_hidden">
+                  <div class="invalid-feedback">PBBKB is required.</div>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Total Harga</label>
+                  <input type="text" class="form-control" id="total_price_display" readonly>
+                  <input type="hidden" name="total_price" id="total_price_hidden">
+                  <div class="invalid-feedback">Total Harga is required.</div>
+                </div>
+              </div>
+
+              <!-- Catatan -->
+              <div class="row g-3 mt-2">
+                <div class="col-md-12">
+                  <label class="form-label fw-bold fs-5">Catatan</label>
+                </div>
+              </div>
+
+              <!-- Susut, Payment, Tanggal Berlaku -->
+              <div class="row g-3 mt-2">
+                <div class="col-md-3">
+                  <label class="form-label">Toleransi Susut</label>
+                  <div class="d-flex gap-3">
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="susut" id="susut01" value="0.1" required>
+                      <label class="form-check-label" for="susut01">0.1</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="susut" id="susut02" value="0.2">
+                      <label class="form-check-label" for="susut02">0.2</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="susut" id="susut03" value="0.3">
+                      <label class="form-check-label" for="susut03">0.3</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="susut" id="susut04" value="0.4">
+                      <label class="form-check-label" for="susut04">0.4</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="susut" id="susut05" value="0.5">
+                      <label class="form-check-label" for="susut05">0.5</label>
+                    </div>
+                  </div>
+                  <div class="invalid-feedback">Toleransi Susut is required.</div>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Payment Method</label>
+                  <select class="form-select select2" name="pay_method" id="pay_method" required></select>
+                  <div class="invalid-feedback">Payment Method is required.</div>
+                </div>
+                <div class="col-md-5">
+                  <label class="form-label">Tanggal Berlaku</label>
+                  <input type="text" class="form-control" name="note_berlaku" id="note_berlaku" readonly>
+                  <div class="invalid-feedback">Tanggal Berlaku is required.</div>
+                </div>
+              </div>
+
+              <!-- Workflow History (shown when status = 2 / revisi) -->
+              <div id="remark-history" class="mt-4" style="display:none;">
+                <h5 class="mb-2">Workflow History</h5>
+                <div class="table-responsive">
+                  <table class="table table-bordered" id="remark-history-table">
+                    <thead>
+                      <tr>
+                        <th style="width:60px;">No</th>
+                        <th>Pengisi</th>
+                        <th>Remark</th>
+                        <th style="width:180px;">Dibuat Tanggal</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr><td colspan="4" class="text-center">Belum ada data</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <button id="btn-submit-sph" class="btn btn-primary mt-4 rounded" type="submit">Create SPH</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+@endsection
+
+@section('scripts')
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('.select2').select2();
+        // Prefill from query params if present (when form opened in iframe)
+        const urlParams = new URLSearchParams(window.location.search);
+        const passedTipe = urlParams.get('tipe') || '';
+        const passedCompanyId = urlParams.get('company') || '';
+        const passedCompanyName = urlParams.get('company_name') || '';
+        const passedTemplateId = urlParams.get('template_id') || '';
+        const passedStatus = parseInt(urlParams.get('status') || '0', 10);
+        const passedSphId = urlParams.get('sph_id') || '';
+
+        if (passedTemplateId) {
+            $('#template_id').val(passedTemplateId);
+        }
+        if (passedSphId) {
+            $('#sph_id').val(passedSphId);
+        }
+        if (passedTipe) {
+            $('#type_sph').val(passedTipe).prop('readonly', true);
+        }
+        if (passedCompanyName) {
+            // When we receive name directly, set text input; if your form uses select, replace accordingly
+            $('#comp_name').val(passedCompanyName).prop('readonly', true);
+        }
+
+        // If type and company id provided, generate kode_sph via API detail same as original code
+        (function autoGenerateKode(){
+            const today = new Date();
+            const year = today.getFullYear();
+            if (passedCompanyId) {
+                $.get('/api/get-customer-detail', { id: passedCompanyId }, function(data) {
+                    const romawi = ['', 'I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'][today.getMonth() + 1];
+                    const periode = today.getDate() <= 14 ? 'P1' : 'P2';
+                    $('#kode_sph').val(`${data.cust_code}/${data.alias}/${data.type}/${romawi}/${periode}/${year}`);
+                    // Autofill contact fields based on customer detail
+                    $('#pic').val(data.pic_name || '');
+                    $('#email').val(data.email || '');
+                    $('#contact_no').val(data.pic_contact || '');
+                    
+                    // Re-initialize OAT rows berdasarkan nama customer setelah data dimuat
+                    initializeDefaultOatRows();
+                });
+            }
+        })();
+        const PPN_PERCENT = {{ env('PPN', 11) }};
+        let lokasiPercentage = 0;
+
+        // Fungsi untuk memformat angka menjadi format mata uang Rupiah
+        function formatRupiah(angka) {
+            // Menggunakan Intl.NumberFormat untuk performa dan akurasi yang lebih baik
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(angka || 0);
+        }
+
+        // Fungsi untuk mendapatkan nilai numerik dari format Rupiah
+        function parseRupiah(stringRupiah) {
+            return parseFloat(stringRupiah.replace(/[^0-9]/g, '')) || 0;
+        }
+
+        // --- Fungsi untuk Tabel OAT Lokasi ---
+        let oatRowCounter = 0;
+
+        // Fungsi untuk menambah baris OAT (tanpa SPOB)
+        function addOatRow(lokasi = '', oat10kl = '') {
+            const rowId = 'oat-row-' + oatRowCounter++;
+            const lokasiValue = lokasi || '';
+            const oatValue = oat10kl ? formatRupiah(parseRupiah(oat10kl)) : '';
+            
+            const row = `
+                <tr id="${rowId}">
+                    <td>
+                        <input type="text" class="form-control oat-lokasi" value="${lokasiValue}" placeholder="Nama Lokasi" required>
+                    </td>
+                    <td>
+                        <input type="text" class="form-control oat-10kl" value="${oatValue}" placeholder="Rp 0" data-numeric="0">
+                        <input type="hidden" class="oat-10kl-hidden" value="${parseRupiah(oatValue)}">
+                    </td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-sm btn-danger btn-remove-oat" data-row-id="${rowId}">
+                            <i class="fa fa-minus"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+            $('#oat-table-body').append(row);
+            
+            // Attach event listener untuk format OAT 10 kl
+            $(`#${rowId} .oat-10kl`).on('input', function() {
+                const rawValue = parseRupiah($(this).val());
+                $(this).siblings('.oat-10kl-hidden').val(rawValue);
+                let cursorPos = this.selectionStart;
+                let originalLength = this.value.length;
+                $(this).val(formatRupiah(rawValue));
+                let newLength = this.value.length;
+                this.setSelectionRange(cursorPos + (newLength - originalLength), cursorPos + (newLength - originalLength));
+            });
+        }
+
+        // Fungsi untuk menghapus baris OAT
+        function removeOatRow(rowId) {
+            if ($('#oat-table-body tr').length > 1) {
+                $('#' + rowId).remove();
+            } else {
+                alert('Minimal harus ada 1 lokasi');
+            }
+        }
+        
+        // Expose function to global scope (untuk fallback jika diperlukan)
+        window.removeOatRow = removeOatRow;
+
+        // Event delegation untuk tombol remove OAT (lebih reliable daripada onclick inline)
+        $(document).on('click', '.btn-remove-oat', function(e) {
+            e.preventDefault();
+            const rowId = $(this).data('row-id');
+            if (rowId) {
+                removeOatRow(rowId);
+            } else {
+                // Fallback: hapus row parent jika tidak ada row-id
+                const $row = $(this).closest('tr');
+                if ($('#oat-table-body tr').length > 1) {
+                    $row.remove();
+                } else {
+                    alert('Minimal harus ada 1 lokasi');
+                }
+            }
+        });
+
+        // Inisialisasi default lokasi berdasarkan nama customer
+        function initializeDefaultOatRows() {
+            $('#oat-table-body').empty();
+            
+            // Ambil nama customer
+            const compName = $('#comp_name').is('select') ? $('#comp_name').find(':selected').text() : $('#comp_name').val();
+            const compNameLower = (compName || '').toLowerCase();
+            
+            // Jika nama customer mengandung "Energi"
+            if (compNameLower.indexOf('energi') !== -1) {
+                // 1 baris dengan lokasi "Muara Lawa, Kutai Barat"
+                addOatRow('Muara Lawa, Kutai Barat', '');
+            }
+            // Jika nama customer mengandung "gawi"
+            else if (compNameLower.indexOf('gawi') !== -1) {
+                // 10 baris dengan lokasi-lokasi berikut
+                const gawiLocations = [
+                    'Long Biak',
+                    'Lepak Aru',
+                    'Long Lembu',
+                    'Antutan',
+                    'Desa Mara',
+                    'Bayangkara',
+                    'Long Tungu',
+                    'Nahaya',
+                    'Tanjung Selor',
+                    'Long Sam'
+                ];
+                gawiLocations.forEach(function(lokasi) {
+                    addOatRow(lokasi, '');
+                });
+            }
+            // Default: 1 baris dengan lokasi "Muara Lawa,Kutai Barat"
+            else {
+                addOatRow('Muara Lawa,Kutai Barat', '');
+            }
+        }
+
+        // Fungsi untuk mengumpulkan data OAT saat submit
+        function getOatData() {
+            const details = [];
+            const productText = $('#product').find(':selected').text() || '';
+            const compName = $('#comp_name').is('select') ? $('#comp_name').find(':selected').text() : $('#comp_name').val();
+            
+            $('#oat-table-body tr').each(function() {
+                const lokasi = $(this).find('.oat-lokasi').val();
+                const oat10kl = parseFloat($(this).find('.oat-10kl-hidden').val()) || 0;
+                
+                if (lokasi) {
+                    // Hanya buat 1 entri per lokasi untuk OAT 10 KL
+                    details.push({
+                        biaya_lokasi: lokasi,  // Lokasi name
+                        cname_lname: 'OAT 10 KL',  // OAT 10 KL
+                        product: productText,    // Product name
+                        qty: 0,                  // Qty (not used in OAT table, set to 0)
+                        price_liter: oat10kl,   // OAT 10 kl value
+                        ppn: 0,                  // PPN (calculated separately in main form)
+                        pbbkb: 0,                // PBBKB (calculated separately in main form)
+                        total_price: oat10kl,   // OAT 10 KL value masuk ke total_price
+                        spob: null              // SPOB tidak ada, set null
+                    });
+                }
+            });
+            return details;
+        }
+
+        // Inisialisasi saat halaman dimuat (setelah semua setup selesai)
+        // Gunakan setTimeout untuk memastikan comp_name sudah terisi dari query params jika ada
+        setTimeout(function() {
+            initializeDefaultOatRows();
+        }, 100);
+
+        // Event listener untuk tombol tambah lokasi
+        $('#btn-add-oat-row').on('click', function() {
+            addOatRow();
+        });
+
+        // Fungsi utama untuk menghitung total (rollback ke rumus awal: PPN + PBBKB)
+        function calculateTotal() {
+            const priceLiter = parseFloat($('#price_liter_hidden').val()) || 0;
+            const ppn = priceLiter * PPN_PERCENT / 100;
+            const pbbkb = priceLiter * lokasiPercentage / 100;
+            const total = priceLiter + ppn + pbbkb;
+
+            $('#ppn_display').val(formatRupiah(ppn));
+            $('#ppn_hidden').val(ppn.toFixed(2));
+            $('#pbbkb_display').val(formatRupiah(pbbkb));
+            $('#pbbkb_hidden').val(pbbkb.toFixed(2));
+            $('#total_price_display').val(formatRupiah(total));
+            $('#total_price_hidden').val(total.toFixed(2));
+        }
+
+        // --- Event Listeners ---
+
+        // PERBAIKAN: Event listener untuk input manual harga dasar
+        $('#price_liter_display').on('input', function(e) {
+            // 1. Ambil nilai numerik dari input
+            let rawValue = parseRupiah($(this).val());
+
+            // 2. Update input tersembunyi dengan nilai numerik
+            $('#price_liter_hidden').val(rawValue);
+
+            // 3. Format ulang input yang terlihat
+            // Simpan posisi kursor agar tidak loncat
+            let cursorPos = this.selectionStart;
+            let originalLength = this.value.length;
+            $(this).val(formatRupiah(rawValue));
+            let newLength = this.value.length;
+            this.setSelectionRange(cursorPos + (newLength - originalLength), cursorPos + (newLength - originalLength));
+
+            // 4. Panggil kalkulasi total
+            calculateTotal();
+        });
+
+        // (rollback) tidak ada input OAT pada template UMUM
+
+        // Event listener untuk produk
+        $('#product').on('change', function() {
+            const price = $(this).find(':selected').data('price') || 0;
+            $('#price_liter_hidden').val(price);
+            // Update juga display input agar konsisten
+            $('#price_liter_display').val(formatRupiah(price));
+            calculateTotal();
+        });
+
+        // Event listener untuk biaya lokasi
+        $('#biaya_lokasi').on('select2:select', function(e) {
+            lokasiPercentage = parseFloat(e.params.data.percentage || 0);
+            calculateTotal();
+        });
+
+        // --- Inisialisasi Halaman ---
+
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = today.getMonth();
+        const monthName = today.toLocaleString('default', { month: 'long' });
+        let startDay = today.getDate() <= 14 ? 1 : 15;
+        let endDay = today.getDate() <= 14 ? 14 : new Date(year, month + 1, 0).getDate();
+        $('#note_berlaku').val(`Harga berlaku dari tanggal ${startDay} - ${endDay} ${monthName} ${year}`);
+
+        $('#type_sph').on('change', function() {
+            const type = $(this).val();
+            const $customer = $('#comp_name');
+            $customer.html('<option value="">Loading...</option>').trigger('change');
+            if (type) {
+                $.get('/api/get-customers', { type }, function(data) {
+                    $customer.empty().append('<option value="">Pilih Customer</option>');
+                    data.forEach(item => {
+                        $customer.append(`<option value="${item.id}">${item.name}</option>`);
+                    });
+                });
+            } else {
+                $customer.empty().append('<option value="">Pilih Customer</option>');
+            }
+        });
+
+        $('#comp_name').on('change', function() {
+            const id = $(this).val();
+            if (id) {
+                $.get('/api/get-customer-detail', { id: id }, function(data) {
+                    const romawi = ['', 'I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'][today.getMonth() + 1];
+                    const periode = today.getDate() <= 14 ? 'P1' : 'P2';
+                    $('#kode_sph').val(`${data.cust_code}/${data.alias}/${data.type}/${romawi}/${periode}/${year}`);
+                    $('#pic').val(data.pic_name); $('#email').val(data.email); $('#contact_no').val(data.pic_contact);
+                    
+                    // Re-initialize OAT rows berdasarkan nama customer
+                    initializeDefaultOatRows();
+                });
+            } else {
+                // Jika customer dihapus, re-initialize juga
+                initializeDefaultOatRows();
+            }
+        });
+        
+        // Event listener untuk input text comp_name (jika bukan select)
+        $('#comp_name').on('input', function() {
+            // Re-initialize OAT rows saat nama customer berubah (untuk text input)
+            if ($(this).is('input[type="text"]')) {
+                initializeDefaultOatRows();
+            }
+        });
+
+        $.get('/api/get-products', function(data) {
+            const $product = $('#product');
+            $product.empty().append('<option value="">Pilih Product</option>');
+            data.forEach(item => {
+                $product.append(`<option value="${item.id}" data-price="${item.price}">${item.product_name}</option>`);
+            });
+        });
+
+        $('#biaya_lokasi').select2({
+            placeholder: 'Pilih Lokasi',
+            ajax: {
+                url: '/api/master-lov/children',
+                dataType: 'json', delay: 250,
+                data: () => ({ parent_code: 'LOKASI_MASTER' }),
+                processResults: data => ({ results: $.map(data, item => ({ id: item.id, text: `${item.code} (${item.value}%)`, percentage: item.value })) })
+            }
+        });
+
+        $('#pay_method').select2({
+            placeholder: 'Pilih Metode',
+            ajax: {
+                url: '/api/master-lov/children',
+                dataType: 'json', delay: 250,
+                data: () => ({ parent_code: 'PAYMENT_METHOD' }),
+                processResults: data => ({ results: $.map(data, item => ({ id: item.id, text: item.value })) })
+            }
+        });
+
+        // --- Tampilkan remark & ganti label tombol jika status revisi ---
+        if (passedStatus === 2 && passedSphId) {
+            $('#remark-history').show();
+            $('#btn-submit-sph').text('Ajukan Kembali');
+            const $tbody = $('#remark-history-table tbody');
+            $tbody.html('<tr><td colspan="4" class="text-center">Loading...</td></tr>');
+            $.get(`{{ url('/api/remarks') }}/${encodeURIComponent(passedSphId)}?tipe_trx=sph`)
+            .done(function(remarks){
+                if (!Array.isArray(remarks) || remarks.length === 0){
+                    $tbody.html('<tr><td colspan="4" class="text-center">Tidak ada remark</td></tr>');
+                    return;
+                }
+                const rows = remarks.map(function(r, i){
+                    const created = r.created_at ? new Date(r.created_at).toLocaleDateString('id-ID', {year:'numeric', month:'long', day:'numeric'}) : '';
+                    return `<tr>
+                        <td>${i+1}</td>
+                        <td>${r.user||''}</td>
+                        <td>${r.comment||''}</td>
+                        <td>${created}</td>
+                    </tr>`;
+                }).join('');
+                $tbody.html(rows);
+            })
+            .fail(function(){
+                $tbody.html('<tr><td colspan="4" class="text-center text-danger">Gagal memuat remark</td></tr>');
+            });
+        }
+
+        // Form Submission
+        $('#sph-form').on('submit', function(e) {
+            e.preventDefault();
+            if (!this.checkValidity()) {
+                e.stopPropagation();
+                $(this).addClass('was-validated');
+                return;
+            }
+
+            const $btn = $(this).find('button[type="submit"]');
+            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Process menyimpan...');
+
+            const isRevisi = (passedStatus === 2) && !!($('#sph_id').val());
+            
+            // Build details array from OAT table
+            const details = getOatData();
+            
+            const formData = {
+                template_id: $('#template_id').val(),
+                tipe_sph: $('#type_sph').val(),
+                kode_sph: $('#kode_sph').val(),
+                comp_name: $('#comp_name').is('select') ? $('#comp_name').find(':selected').text() : $('#comp_name').val(),
+                pic: $('#pic').val(),
+                contact_no: $('#contact_no').val(),
+                product: $('#product').find(':selected').text(),
+                price_liter: $('#price_liter_hidden').val(),
+                biaya_lokasi: $('#biaya_lokasi').find(':selected').text(),
+                ppn: $('#ppn_hidden').val(),
+                pbbkb: $('#pbbkb_hidden').val(),
+                total_price: $('#total_price_hidden').val(),
+                pay_method: $('#pay_method').find(':selected').text(),
+                susut: $('input[name="susut"]:checked').val(),
+                note_berlaku: $('#note_berlaku').val(),
+                details: details
+            };
+            if (isRevisi) { formData.sph_id = $('#sph_id').val(); }
+
+            const endpoint = isRevisi ? '/api/sph/update' : '/api/sph/validator';
+
+            $.ajax({
+                url: endpoint,
+                method: 'POST',
+                data: formData,
+                success: function(res) {
+                    var sphNo = $('#kode_sph').val() || (res && (res.kode_sph || (res.data && res.data.kode_sph))) || '';
+                    var isRevisiNow = (passedStatus === 2);
+                    var showAndClose = function(){
+                        try {
+                            if (window.parent && window.parent.$) {
+                                window.parent.$('#formSphModal').modal('hide');
+                                window.parent.$('#createSphModal').modal('hide');
+                                if (typeof window.parent.fetchSphWithFilter === 'function') {
+                                    window.parent.fetchSphWithFilter();
+                                } else {
+                                    window.parent.location.reload();
+                                }
+                            } else {
+                                window.location.reload();
+                            }
+                        } catch (e) {
+                            window.location.reload();
+                        }
+                    };
+
+                    if (window.parent && window.parent.Swal) {
+                        window.parent.Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil',
+                            html: (isRevisiNow
+                                ? 'Revisi SPH dengan Nomor SPH : <b>' + sphNo + '</b> Berhasil Diajukan Kembali'
+                                : 'Pembuatan SPH dengan Nomor SPH : <b>' + sphNo + '</b> Berhasil'),
+                            confirmButtonText: 'OK'
+                        }).then(showAndClose);
+                    } else {
+                        alert(isRevisiNow
+                            ? ('Revisi SPH dengan Nomor SPH: ' + sphNo + ' Berhasil Diajukan Kembali')
+                            : ('Pembuatan SPH dengan Nomor SPH: ' + sphNo + ' Berhasil'));
+                        showAndClose();
+                    }
+                },
+                error: function(err) {
+                    alert('Gagal simpan data!');
+                    console.log(err);
+                    // restore button label depending on mode
+                    if (passedStatus === 2) {
+                        $btn.prop('disabled', false).html('Ajukan Kembali');
+                    } else {
+                        $btn.prop('disabled', false).html('Create SPH');
+                    }
+                }
+            });
+        });
+    });
+</script>
+@endsection
+

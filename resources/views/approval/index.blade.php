@@ -227,13 +227,42 @@
             <tr><th>No SPH</th><td id="detail-no-sph"></td></tr>
             <tr><th>Nama Perusahaan</th><td id="detail-comp-name"></td></tr>
             <tr><th>Produk Dibeli</th><td id="detail-product"></td></tr>
-            <tr><th>Harga /Liter</th><td id="detail-price-liter"></td></tr>
-            <tr><th>PPN</th><td id="detail-ppn"></td></tr>
-            <tr><th>PBBKB</th><td id="detail-pbbkb"></td></tr>
-            <tr><th>Total Harga</th><td id="detail-total-price"></td></tr>
+            <tr id="row-harga-liter"><th>Harga /Liter</th><td id="detail-price-liter"></td></tr>
+            <tr id="row-ppn"><th>PPN</th><td id="detail-ppn"></td></tr>
+            <!-- For pbbkbinclude: OAT fields should appear right after PPN -->
+            <tr id="row-oat"><th>OAT</th><td id="detail-oat"></td></tr>
+            <tr id="row-ppn-oat"><th>PPN OAT</th><td id="detail-ppn-oat"></td></tr>
+            <tr id="row-oat-lokasi"><th>OAT Lokasi</th><td id="detail-oat-lokasi"></td></tr>
+            <!-- For create: show PBBKB; for pbbkbinclude: keep hidden -->
+            <tr id="row-pbbkb"><th>PBBKB</th><td id="detail-pbbkb"></td></tr>
+            <!-- Total Harga shown for create and pbbkbinclude -->
+            <tr id="row-total-harga"><th>Total Harga</th><td id="detail-total-price"></td></tr>
             <tr><th>Metode Pembayaran</th><td id="detail-pay-method"></td></tr>
+            <tr><th>Nilai Susut</th><td id="detail-susut"></td></tr>
+            <tr><th>Note Berlaku</th><td id="detail-note-berlaku"></td></tr>
           </tbody>
         </table>
+
+        <!-- Detail Lines (Kencana) -->
+        <div class="mb-4" id="kencana-details" style="display:none;">
+          <label class="fw-bold mb-2">Detail Item</label>
+          <div class="table-responsive theme-scrollbar">
+            <table class="display table" id="table-kencana-lines" style="width:100%">
+              <thead>
+                <tr>
+                  <th>Customer</th>
+                  <th>Qty</th>
+                  <th>Harga Dasar</th>
+                  <th>PPN</th>
+                  <th>PBBKB</th>
+                  <th>Total</th>
+                  <th>Lokasi</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
 
         <!-- Riwayat Remark Approval -->
         <div class="mb-4">
@@ -632,9 +661,11 @@
               return;
             }
 
+            // simpan list agar bisa diakses saat klik verify tanpa memanggil API lain
+            window._approvalSphItems = res.data.sph.items || [];
             var rows = res.data.sph.items.map(function(item, index){
               console.log('Processing SPH item:', index, item); // Debug log
-              var confirmationHtml = `<span class="badge bg-primary confirmation-btn" data-id="${item.id}" style="cursor:pointer;">Click to Verify</span>`;
+              var confirmationHtml = `<span class="badge bg-primary confirmation-btn" data-id="${item.id}" data-index="${index}" data-template-id="${item.template_id||''}" data-template-form="${item.template_form||''}" style="cursor:pointer;">Click to Verify</span>`;
               return [
                 item.tipe_sph || '',
                 item.no_sph || '',
@@ -652,6 +683,18 @@
             console.log('Processed SPH rows:', rows); // Debug log
             table.clear().rows.add(rows).draw();
             $('[title]').tooltip({ trigger: 'hover' });
+            // Hydrate other tables here as well
+            try {
+              if (typeof transporterTable !== 'undefined') {
+                transporterTable.clear().rows.add(res.data.transporter.items || []).draw();
+              }
+              if (typeof supplierTable !== 'undefined') {
+                supplierTable.clear().rows.add(res.data.supplier.items || []).draw();
+              }
+              if (typeof invoiceTable !== 'undefined') {
+                invoiceTable.clear().rows.add(res.data.invoice.items || []).draw();
+              }
+            } catch (e) { console.warn('Failed hydrating additional tables', e); }
           })
           .fail(function(xhr, status, error) {
             console.error('API Error:', xhr, status, error);
@@ -677,23 +720,50 @@
         return 'Rp ' + x.toLocaleString('id-ID',{ minimumFractionDigits:2 });
       }
 
-      // Initial load
-      fetchSph();
+      // Initial load will be triggered after all tables are initialized below
 
       // Handler untuk klik Confirmation badge (SPH)
       $(document).on('click', '#basic-1 .confirmation-btn', function(){
         var $tr = $(this).closest('tr');
         var sphId = $(this).data('id');
+        var idx = $(this).data('index');
+        var dataList = window._approvalSphItems || [];
+        // Ambil item langsung dari response list
+        var item = (typeof idx !== 'undefined') ? dataList[idx] : (dataList.find(function(it){ return String(it.id) === String(sphId); }) || {});
 
-        // Isi detail table
-        $('#detail-tipe-sph').text($tr.find('td').eq(0).text());
-        $('#detail-no-sph').text($tr.find('td').eq(1).text());
-        $('#detail-comp-name').text($tr.find('td').eq(2).text());
-        $('#detail-product').text($tr.find('td').eq(3).text());
-        $('#detail-price-liter').text($tr.find('td').eq(4).text());
-        $('#detail-ppn').text($tr.find('td').eq(5).text());
+        // Check template_form - if "kmp", use KMP modal, otherwise use default modal
+        var templateForm = (item && item.template_form ? String(item.template_form) : '').toLowerCase();
+        if (templateForm === 'kmp') {
+          // Use KMP approval modal
+          if (typeof showKmpApprovalModal === 'function') {
+            showKmpApprovalModal(sphId, item);
+          } else {
+            console.error('showKmpApprovalModal function not found');
+            alert('Modal KMP tidak tersedia. Silakan refresh halaman.');
+          }
+          return;
+        }
+
+        // Isi detail table (gunakan data list bila tersedia)
+        var templateFormLower = (item && item.template_form ? String(item.template_form) : '').toLowerCase();
+        $('#detail-tipe-sph').text(item.tipe_sph || $tr.find('td').eq(0).text());
+        $('#detail-no-sph').text(item.no_sph || $tr.find('td').eq(1).text());
+        $('#detail-comp-name').text(item.nama_perusahaan || $tr.find('td').eq(2).text());
+        $('#detail-product').text(item.produk_dibeli || $tr.find('td').eq(3).text());
+        // Prefer values from API response item, fallback to row text
+        var apiHarga = item && (item.harga_per_liter != null) ? item.harga_per_liter : null;
+        var apiPpn   = item && (item.ppn != null) ? item.ppn : null;
+        var apiTotal = item && (item.total_harga != null) ? item.total_harga : null;
+        // Jika template gawi: SELALU tampilkan harga per liter
+        if (templateForm === 'gawi') {
+          $('#row-harga-liter').show();
+          $('#detail-price-liter').text(apiHarga != null ? formatRupiah(apiHarga) : $tr.find('td').eq(4).text());
+        } else {
+          $('#detail-price-liter').text(apiHarga != null ? formatRupiah(apiHarga) : $tr.find('td').eq(4).text());
+        }
+        $('#detail-ppn').text(apiPpn != null ? formatRupiah(apiPpn) : $tr.find('td').eq(5).text());
         $('#detail-pbbkb').text($tr.find('td').eq(6).text());
-        $('#detail-total-price').text($tr.find('td').eq(7).text());
+        $('#detail-total-price').text(apiTotal != null ? formatRupiah(apiTotal) : $tr.find('td').eq(7).text());
         $('#detail-pay-method').text($tr.find('td').eq(8).text());
 
         // Kosongkan & tampilkan spinner pada remarkHistory
@@ -706,11 +776,356 @@
         $('input[name="approval_status"]').prop('checked', false);
         $('#approvalComment').val('');
 
-        // Load remark riwayat via API (reusable helper)
-        // Get trxId from the row data
-        var rowData = table.rows().data().toArray().find(r => r.id == sphId);
-        var trxId = rowData ? (rowData.trxId || rowData.id) : sphId;
-        loadRemarks(trxId, 'sph', '#remarkHistory');
+        // Gunakan data dari list untuk mengisi field tambahan & visibilitas
+        var templateForm = (item && item.template_form ? String(item.template_form) : '').toLowerCase();
+        $('#detail-susut').text(item && item.susut != null ? item.susut : '');
+        $('#detail-note-berlaku').text(item && item.note_berlaku ? item.note_berlaku : '');
+        $('#detail-oat').text(item && item.oat != null ? item.oat : '');
+        $('#detail-ppn-oat').text(item && item.ppn_oat != null ? item.ppn_oat : '');
+        $('#detail-oat-lokasi').text(item && (item.oat_lokasi || item.site_location) ? (item.oat_lokasi || item.site_location) : '');
+
+        // Hide all conditional rows first
+        $('#kencana-details, #row-ppn, #row-pbbkb, #row-total-harga, #row-oat, #row-ppn-oat, #row-oat-lokasi').hide();
+        if (templateForm === 'create') {
+          // create: show PPN, PBBKB, Total Harga
+          $('#row-ppn, #row-pbbkb, #row-total-harga').show();
+          $('#row-harga-liter').show();
+        } else if (templateForm === 'pbbkbinclude') {
+          // pbbkbinclude: show PPN, OAT, PPN OAT, OAT Lokasi, Total Harga
+          $('#row-ppn').show();
+          $('#row-oat, #row-ppn-oat, #row-oat-lokasi').show();
+          $('#row-total-harga').show();
+          $('#row-harga-liter').show();
+          // keep PBBKB hidden for pbbkbinclude
+        } else if (templateForm === 'gawi') {
+          // gawi: tampilkan Harga, PPN, Total (tanpa PBBKB atau OAT)
+          $('#row-ppn').show();
+          $('#row-total-harga').show();
+          $('#row-harga-liter').show();
+        }
+
+        // Dynamic details table: show when details array exists, otherwise hide
+        var details = (item && Array.isArray(item.details)) ? item.details : [];
+        if (details.length) {
+          $('#kencana-details').show();
+          // hide standalone Harga /Liter when details table is present, kecuali template gawi
+          if (templateForm !== 'gawi') {
+            $('#row-harga-liter').hide();
+          } else {
+            $('#row-harga-liter').show();
+          }
+
+          if ($.fn.DataTable.isDataTable('#table-kencana-lines')) {
+            $('#table-kencana-lines').DataTable().clear().destroy();
+          }
+
+          // Special handling for indexim template form
+          if (templateForm === 'indexim') {
+            // Group by biaya_lokasi and create custom structure
+            var lokasiMap = {};
+            details.forEach(function(detail) {
+              var lokasi = detail.biaya_lokasi || '';
+              if (!lokasiMap[lokasi]) {
+                lokasiMap[lokasi] = {
+                  lokasi: lokasi,
+                  oat10kl: null,
+                  spob: null
+                };
+              }
+              var cnameLname = String(detail.cname_lname || '').trim().toUpperCase();
+              // Check if cname_lname contains "OAT 10 KL" or "SPOB"
+              if (cnameLname.indexOf('OAT 10 KL') !== -1 || cnameLname === 'OAT 10 KL') {
+                lokasiMap[lokasi].oat10kl = detail.total_price;
+              } else if (cnameLname.indexOf('SPOB') !== -1 || cnameLname === 'SPOB') {
+                lokasiMap[lokasi].spob = detail.total_price;
+              }
+            });
+
+            // Convert map to array for DataTable
+            var processedData = Object.keys(lokasiMap).map(function(lokasi) {
+              return lokasiMap[lokasi];
+            });
+
+            // Define columns for indexim
+            var columns = [
+              {
+                data: 'lokasi',
+                title: 'OAT Lokasi',
+                defaultContent: ''
+              },
+              {
+                data: 'oat10kl',
+                title: 'OAT 10KL',
+                defaultContent: '',
+                className: 'text-end',
+                render: function(val, type) {
+                  if (type === 'sort' || type === 'type') {
+                    return val != null ? parseFloat(val) || 0 : 0;
+                  }
+                  if (val === null || val === undefined || val === '') return '';
+                  var str = String(val).trim();
+                  str = str.replace(/[^0-9,.-]/g, '');
+                  str = str.replace(/\.(?=\d{3}(\D|$))/g, '');
+                  str = str.replace(/,/g, '.');
+                  var num = parseFloat(str);
+                  if (isNaN(num)) num = 0;
+                  return 'Rp ' + num.toLocaleString('id-ID', { minimumFractionDigits: 2 });
+                }
+              },
+              {
+                data: 'spob',
+                title: 'SPOB',
+                defaultContent: '',
+                className: 'text-end',
+                render: function(val, type) {
+                  if (type === 'sort' || type === 'type') {
+                    return val != null ? parseFloat(val) || 0 : 0;
+                  }
+                  if (val === null || val === undefined || val === '') return '';
+                  var str = String(val).trim();
+                  str = str.replace(/[^0-9,.-]/g, '');
+                  str = str.replace(/\.(?=\d{3}(\D|$))/g, '');
+                  str = str.replace(/,/g, '.');
+                  var num = parseFloat(str);
+                  if (isNaN(num)) num = 0;
+                  return 'Rp ' + num.toLocaleString('id-ID', { minimumFractionDigits: 2 });
+                }
+              }
+            ];
+
+            // Rebuild table header
+            var $theadRow = $('#table-kencana-lines thead tr');
+            if ($theadRow.length === 0) {
+              $('#table-kencana-lines').append('<thead><tr></tr></thead>');
+              $theadRow = $('#table-kencana-lines thead tr');
+            }
+            $theadRow.html(columns.map(function(col){ return '<th>'+ col.title +'</th>'; }).join(''));
+
+            // Initialize DataTable with processed data
+            $('#table-kencana-lines').DataTable({
+              searching: false,
+              paging: false,
+              info: false,
+              autoWidth: false,
+              data: processedData,
+              columns: columns
+            });
+            // Continue to show modal (don't return here)
+          } else if (templateForm === 'ebh_gmk') {
+            // Special handling for ebh_gmk template form (same as indexim but without SPOB)
+            // Group by biaya_lokasi and create custom structure
+            var lokasiMap = {};
+            details.forEach(function(detail) {
+              var lokasi = detail.biaya_lokasi || '';
+              if (!lokasiMap[lokasi]) {
+                lokasiMap[lokasi] = {
+                  lokasi: lokasi,
+                  oat10kl: null
+                };
+              }
+              var cnameLname = String(detail.cname_lname || '').trim().toUpperCase();
+              // Check if cname_lname contains "OAT 10 KL"
+              if (cnameLname.indexOf('OAT 10 KL') !== -1 || cnameLname === 'OAT 10 KL') {
+                lokasiMap[lokasi].oat10kl = detail.total_price;
+              }
+            });
+
+            // Convert map to array for DataTable
+            var processedData = Object.keys(lokasiMap).map(function(lokasi) {
+              return lokasiMap[lokasi];
+            });
+
+            // Define columns for ebh_gmk (only Lokasi and OAT, no SPOB)
+            var columns = [
+              {
+                data: 'lokasi',
+                title: 'Lokasi',
+                defaultContent: ''
+              },
+              {
+                data: 'oat10kl',
+                title: 'OAT',
+                defaultContent: '',
+                className: 'text-end',
+                render: function(val, type) {
+                  if (type === 'sort' || type === 'type') {
+                    return val != null ? parseFloat(val) || 0 : 0;
+                  }
+                  if (val === null || val === undefined || val === '') return '';
+                  var str = String(val).trim();
+                  str = str.replace(/[^0-9,.-]/g, '');
+                  str = str.replace(/\.(?=\d{3}(\D|$))/g, '');
+                  str = str.replace(/,/g, '.');
+                  var num = parseFloat(str);
+                  if (isNaN(num)) num = 0;
+                  return 'Rp ' + num.toLocaleString('id-ID', { minimumFractionDigits: 2 });
+                }
+              }
+            ];
+
+            // Rebuild table header
+            var $theadRow = $('#table-kencana-lines thead tr');
+            if ($theadRow.length === 0) {
+              $('#table-kencana-lines').append('<thead><tr></tr></thead>');
+              $theadRow = $('#table-kencana-lines thead tr');
+            }
+            $theadRow.html(columns.map(function(col){ return '<th>'+ col.title +'</th>'; }).join(''));
+
+            // Initialize DataTable with processed data
+            $('#table-kencana-lines').DataTable({
+              searching: false,
+              paging: false,
+              info: false,
+              autoWidth: false,
+              data: processedData,
+              columns: columns
+            });
+            // Continue to show modal (don't return here)
+          } else {
+            // Build dynamic columns from keys present in details objects
+          var allKeys = [];
+          details.forEach(function(obj){
+            if (obj && typeof obj === 'object') {
+              Object.keys(obj).forEach(function(k){
+                if (allKeys.indexOf(k) === -1) allKeys.push(k);
+              });
+            }
+          });
+
+          // Keys to hide regardless of data
+          var hiddenKeySet = {
+            'id': true,
+            'sph_id': true,
+            'sphid': true,
+            'sphId': true,
+            'created_at': true,
+            'updated_at': true,
+            'createdAt': true,
+            'updatedAt': true
+          };
+
+          // Helper: determine if key is currency-like
+          function isCurrencyKey(key){
+            if (!key) return false;
+            var lower = String(key).toLowerCase();
+            // Explicitly exclude biaya_lokasi from currency formatting
+            if (lower === 'biaya_lokasi') return false;
+            return /(harga|price|ppn|pph|pbbkb|total|oat|bph|biaya|nilai|transport|portal|sub_?total)/i.test(key) && !/(qty|quantity)/i.test(key);
+          }
+
+          // Helper: format value to Rupiah, robust with Indonesian strings
+          function formatRupiahValue(value){
+            if (value === null || value === undefined || value === '') return '';
+            var str = String(value).trim();
+            // remove any non-digit, dot, comma (keep signs)
+            str = str.replace(/[^0-9,.-]/g, '');
+            // normalize: remove thousand dots, replace comma with dot for decimals
+            str = str.replace(/\.(?=\d{3}(\D|$))/g, '');
+            str = str.replace(/,/g, '.');
+            var num = parseFloat(str);
+            if (isNaN(num)) num = 0;
+            return 'Rp ' + num.toLocaleString('id-ID', { minimumFractionDigits: 2 });
+          }
+
+          // Include only keys that are not hidden and have at least one non-null value
+          var columnKeys = allKeys.filter(function(k){
+            var kLower = String(k).toLowerCase();
+            if (hiddenKeySet[k]) return false;
+            // Hide product columns by name variants
+            var isProductCol = ['product','produk','produk_dibeli','product_name','nama_produk','productdesc','product_desc'].indexOf(kLower) !== -1;
+            if (isProductCol) return false;
+            var hasNonNull = details.some(function(row){
+              return row && row.hasOwnProperty(k) && row[k] !== null && row[k] !== undefined;
+            });
+            return hasNonNull;
+          });
+
+          // Build columns with humanized titles and specific overrides
+          var columns = columnKeys.map(function(k){
+            var title;
+            if (k === 'cname_lname') {
+              title = 'Customer / Lokasi';
+            } else if (k === 'price_liter') {
+              title = 'Harga Dasar';
+            } else if (k === 'total_price') {
+              title = 'Total Harga';
+            } else {
+              // Humanize header from key, e.g., price_liter -> Price Liter
+              title = k.replace(/_/g, ' ').replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+            }
+            var col = { data: k, title: title, defaultContent: '' };
+            // Special handling for biaya_lokasi depending on template form
+            if (k === 'biaya_lokasi') {
+              if (templateForm === 'kencana') {
+                col.title = 'Lokasi';
+                col.render = function(val){
+                  var s = (val == null ? '' : String(val));
+                  return s.replace(/\s*\([^)]*\)\s*/g, '').trim();
+                };
+              } else if (templateForm === 'kmp') {
+                col.title = 'PBBKB %';
+                col.render = function(val){
+                  var s = (val == null ? '' : String(val));
+                  var m = s.match(/\(([^)]+)\)/);
+                  return m ? m[1] : '';
+                };
+              }
+            }
+            if (isCurrencyKey(k)) {
+              col.render = function(val, type){
+                if (type === 'sort' || type === 'type') {
+                  // return numeric for sorting
+                  if (val === null || val === undefined || val === '') return 0;
+                  var s = String(val).replace(/[^0-9,.-]/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(/,/g, '.');
+                  var n = parseFloat(s);
+                  return isNaN(n) ? 0 : n;
+                }
+                return formatRupiahValue(val);
+              };
+              col.className = (col.className ? col.className + ' ' : '') + 'text-end';
+            }
+            return col;
+          });
+
+          // Move lokasi/PBBKB% (biaya_lokasi) column to the end if present
+          var lokasiIndex = -1;
+          for (var ci = 0; ci < columns.length; ci++) {
+            if (columns[ci] && columns[ci].data === 'biaya_lokasi') { lokasiIndex = ci; break; }
+          }
+          if (lokasiIndex > -1) {
+            var lokasiCol = columns.splice(lokasiIndex, 1)[0];
+            columns.push(lokasiCol);
+          }
+
+          // If after filtering there are no columns, hide the details table
+          if (!columns.length) {
+            $('#kencana-details').hide();
+            return;
+          }
+
+          // Rebuild table header to match dynamic columns
+          var $theadRow = $('#table-kencana-lines thead tr');
+          if ($theadRow.length === 0) {
+            $('#table-kencana-lines').append('<thead><tr></tr></thead>');
+            $theadRow = $('#table-kencana-lines thead tr');
+          }
+          $theadRow.html(columns.map(function(col){ return '<th>'+ col.title +'</th>'; }).join(''));
+
+          $('#table-kencana-lines').DataTable({
+            searching:false,
+            paging:false,
+            info:false,
+            autoWidth:false,
+            data: details,
+            columns: columns
+          });
+          } // end else for template form
+        } else {
+          $('#kencana-details').hide();
+        }
+
+        // remarks dari id saja
+        loadRemarks(sphId, 'sph', '#remarkHistory');
 
         $('#modalConfirmation').modal('show');
       });
@@ -762,12 +1177,7 @@
       }
       var transporterTable = $('#transporter-table').DataTable({
           processing: true,
-          ajax: {
-              url: '/api/approval/details',
-              dataSrc: function(res) {
-                  return res.data.transporter.items || [];
-              }
-          },
+          data: [],
           columns: [
               { data: 'vendor_po', title: 'No Vendor PO' },
               { data: 'vendor_name', title: 'Nama Perusahaan' },
@@ -816,12 +1226,7 @@
       }
       var supplierTable = $('#supplier-table').DataTable({
           processing: true,
-          ajax: {
-              url: '/api/approval/details',
-              dataSrc: function(res) {
-                  return res.data.supplier.items || [];
-              }
-          },
+          data: [],
           columns: [
               { data: 'vendor_po', title: 'No Vendor PO' },
               { data: 'vendor_name', title: 'Nama Perusahaan' },
@@ -864,13 +1269,12 @@
           }
       });
 
-      // Reload when transporter tab is shown
+      // On tab show, just adjust columns (no extra AJAX)
       $('a[data-bs-toggle="tab"][href="#tab-po-trans"]').on('shown.bs.tab', function() {
-          transporterTable.ajax.reload();
+          transporterTable.columns.adjust().draw(false);
       });
-      // Reload when supplier tab is shown
       $('a[data-bs-toggle="tab"][href="#tab-po-sup"]').on('shown.bs.tab', function() {
-          supplierTable.ajax.reload();
+          supplierTable.columns.adjust().draw(false);
       });
 
       // Invoice Approval table
@@ -879,12 +1283,7 @@
       }
       var invoiceTable = $('#invoice-table').DataTable({
           processing: true,
-          ajax: {
-              url: '/api/approval/details',
-              dataSrc: function(res) {
-                  return res.data.invoice.items || [];
-              }
-          },
+          data: [],
           columns: [
               { data: 'nomer_invoice', title: 'Nomer Invoice' },
               { data: 'nomer_po', title: 'Nomer PO' },
@@ -935,10 +1334,13 @@
           }
       });
 
-      // Reload when invoice tab is shown
+      // On invoice tab show, just redraw
       $('a[data-bs-toggle="tab"][href="#tab-invoice"]').on('shown.bs.tab', function() {
-          invoiceTable.ajax.reload();
+          invoiceTable.columns.adjust().draw(false);
       });
+
+      // Now that all tables are initialized, perform a single fetch and hydrate all tables
+      fetchSph();
 
 
 
@@ -967,9 +1369,9 @@
             data: $(this).serialize(),
             success: function() {
               $('#modal-verify-po').modal('hide');
-              transporterTable.ajax.reload();
               Swal.fire('Berhasil', 'Verifikasi berhasil', 'success');
-              window.location.reload(); // Reload page to refresh data
+              // Reload all tables by calling fetchSph which reloads all data
+              fetchSph();
             },
             error: function(xhr) {
               Swal.fire('Gagal', xhr.responseJSON?.message || 'Verifikasi gagal', 'error');
@@ -1092,10 +1494,8 @@
           success: function(res) {
             Swal.fire('Berhasil', res.message, 'success');
             $('#modal-create-po-supplier').modal('hide');
-            // Reload supplier DataTable
-            if (typeof supplierTable !== 'undefined') {
-              supplierTable.ajax.reload();
-            }
+            // Reload all tables by calling fetchSph which reloads all data
+            fetchSph();
           },
           error: function(xhr) {
             Swal.fire('Gagal', xhr.responseJSON?.message || 'Verifikasi gagal', 'error');
@@ -1153,6 +1553,9 @@
 
   {{-- Include Invoice Approval Modal --}}
   @include('approval.invoice-modal')
+  
+  {{-- Include KMP SPH Approval Modal --}}
+  @include('approval.sph_approval.kmp')
 @endsection
 
 
