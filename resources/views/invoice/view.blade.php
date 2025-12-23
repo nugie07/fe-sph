@@ -227,11 +227,19 @@
 
                     <div class="col-md-6">
                         <label class="form-label">Ditagihkan Kepada (Bill To)</label>
-                        <textarea class="form-control editable-field" name="bill_to" id="bill_to" rows="3"></textarea>
+                        <input type="text" class="form-control editable-field" name="bill_to" id="bill_to">
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Dikirimkan Kepada (Ship To)</label>
-                        <textarea class="form-control editable-field" name="ship_to" id="ship_to" rows="3"></textarea>
+                        <input type="text" class="form-control editable-field" name="ship_to" id="ship_to">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Bill To Address</label>
+                        <textarea class="form-control editable-field" name="bill_to_address" id="bill_to_address" rows="3"></textarea>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Ship To Address</label>
+                        <textarea class="form-control editable-field" name="ship_to_address" id="ship_to_address" rows="3"></textarea>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label">Metode Pembayaran</label>
@@ -425,6 +433,8 @@ $(document).ready(function() {
                     $('#invoice_date').val(invoice.invoice_date || '');
                     $('#ship_to').val(invoice.ship_to || '');
                     $('#bill_to').val(invoice.bill_to || '');
+                    $('#bill_to_address').val(invoice.bill_to_address || '');
+                    $('#ship_to_address').val(invoice.ship_to_address || '');
                     $('#fob').val(invoice.fob || '');
                     $('#sent_via').val(invoice.sent_via || '');
                     $('#sent_date').val(invoice.sent_date || '');
@@ -771,6 +781,8 @@ $(document).ready(function() {
         formData.append('invoice_date', $('#invoice_date').val());
         formData.append('bill_to', $('#bill_to').val());
         formData.append('ship_to', $('#ship_to').val());
+        formData.append('bill_to_address', $('#bill_to_address').val());
+        formData.append('ship_to_address', $('#ship_to_address').val());
         formData.append('fob', $('#fob').val());
         formData.append('sent_via', $('#sent_via').val());
         formData.append('sent_date', $('#sent_date').val());
@@ -824,13 +836,38 @@ $(document).ready(function() {
             },
             error: function(xhr) {
                 let errorMsg = 'Terjadi kesalahan. Silakan coba lagi.';
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    errorMsg = xhr.responseJSON.message;
+                let errorTitle = 'Oops...';
+                
+                if (xhr.responseJSON) {
+                    const response = xhr.responseJSON;
+                    
+                    // Check if there are detailed errors
+                    if (response.errors && typeof response.errors === 'object') {
+                        // Collect all error messages
+                        let errorMessages = [];
+                        for (let field in response.errors) {
+                            if (Array.isArray(response.errors[field])) {
+                                errorMessages.push(...response.errors[field]);
+                            } else {
+                                errorMessages.push(response.errors[field]);
+                            }
+                        }
+                        
+                        if (errorMessages.length > 0) {
+                            errorMsg = errorMessages.join('<br>');
+                            errorTitle = response.message || 'Validation Error';
+                        } else if (response.message) {
+                            errorMsg = response.message;
+                        }
+                    } else if (response.message) {
+                        errorMsg = response.message;
+                    }
                 }
+                
                 Swal.fire({
                     icon: 'error',
-                    title: 'Oops...',
-                    text: errorMsg,
+                    title: errorTitle,
+                    html: errorMsg,
                 });
             }
         });

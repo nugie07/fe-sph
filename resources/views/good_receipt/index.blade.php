@@ -8,7 +8,7 @@
 <link rel="stylesheet" type="text/css" href="{{ asset('assets/css/vendors/datatables.css') }}">
 <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet"/>
 <style>
 /* Fix button shape: kotak rounded bukan pill */
 .btn, .btn-sm, .btn-outline-primary, .btn-primary, .btn-danger, .btn-secondary, .btn-warning {
@@ -36,29 +36,33 @@
   background: #c82333 !important;
   color: #fff !important;
 }
-#modalTerimaPO .modal-content {
+#modalBulkPO .modal-content {
   border-radius: 20px;
   position: relative;
 }
-/* Modal loading overlay & blur */
-#modalTerimaPO .modal-loading-backdrop {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  width: 100%; height: 100%;
-  background: rgba(255,255,255,0.7);
-  z-index: 2000;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(6px);
-  border-radius: 20px;
-}
-#modalTerimaPO.loading .modal-content > .modal-body,
-#modalTerimaPO.loading .modal-content > .modal-header,
-#modalTerimaPO.loading .modal-content > .modal-footer {
+#modalBulkPO.loading .modal-content > .modal-body,
+#modalBulkPO.loading .modal-content > .modal-header,
+#modalBulkPO.loading .modal-content > .modal-footer {
   filter: blur(3px);
   pointer-events: none;
   user-select: none;
+}
+.bulk-row-status {
+  text-align: center;
+  font-size: 12px;
+  font-weight: bold;
+}
+.bulk-row-status.pending {
+  color: #6c757d;
+}
+.bulk-row-status.processing {
+  color: #0d6efd;
+}
+.bulk-row-status.success {
+  color: #198754;
+}
+.bulk-row-status.error {
+  color: #dc3545;
 }
 </style>
 @endsection
@@ -128,6 +132,7 @@
         </div>
     </div>
   </div>
+  
   {{-- Datatable --}}
   <div class="col-sm-12">
     <div class="card">
@@ -135,6 +140,14 @@
         <div>
           <h4 class="mb-0">Data Penerimaan PO</h4>
           <span>Data penerimaan PO dari SPH yang telah dibuat dan dikirim</span>
+        </div>
+        <div>
+          <button type="button" class="btn btn-primary me-2" id="btnTambahPO" style="border-radius:8px;">
+            <i class="fa fa-plus me-1"></i> Tambah PO
+          </button>
+          <button type="button" class="btn btn-success" id="btnBulkPO" style="border-radius:8px;">
+            <i class="fa fa-list me-1"></i> Bulk
+          </button>
         </div>
       </div>
       <div class="card-body">
@@ -159,123 +172,6 @@
     </div>
   </div>
 
-<!-- Modal Terima PO -->
-<div class="modal fade" id="modalTerimaPO" tabindex="-1" aria-labelledby="modalTerimaPOLabel" aria-hidden="true">
-  <div class="modal-dialog modal-xl modal-dialog-centered">
-    <div class="modal-content">
-      <form id="formTerimaPO" enctype="multipart/form-data">
-        <div class="modal-header">
-          <h5 class="modal-title fw-bold" id="modalTerimaPOLabel">Form penerimaan PO ( Purchase Order ) dari Client</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body px-4 py-3">
-          <div class="row mb-2">
-            <div class="col-sm-6">
-              <div class="fw-bold small">Kode SPH</div>
-              <div id="modal-sph-code"></div>
-            </div>
-            <div class="col-sm-6">
-              <div class="fw-bold small">Nama Customer / Client</div>
-              <div id="modal-customer"></div>
-            </div>
-          </div>
-          <div class="mb-3">
-            <label class="fw-bold small">Upload PO (PDF Only) <span class="text-danger">(*maks 2mb)</span></label>
-            <input type="file" class="form-control" id="file" name="file" accept="application/pdf" required>
-          </div>
-          <div class="mb-2">
-            <label class="fw-bold small">View PO</label>
-            <div id="pdfViewer" style="border: 1px solid #ddd; height: 500px; overflow: auto; display: none;">
-			<iframe id="pdfFrame" src="" width="100%" height="100%" frameborder="0"></iframe>
-			</div>
-          </div>
-          <!-- Single-row DataTable for SPH detail -->
-          <div class="mb-3">
-            <label class="fw-bold small">Detail SPH</label>
-            <div class="table-responsive">
-              <table class="table table-bordered" id="table-sph-detail">
-                <thead class="bg-light">
-                  <tr>
-                    <th>Produk</th>
-                    <th>Harga/Liter</th>
-                    <th>Biaya Lokasi</th>
-                    <th>PPN</th>
-                    <th>PBBKB</th>
-                    <th>Total Harga</th>
-                    <th>Metode Bayar</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td><input type="text" readonly class="form-control-plaintext" id="sph-product"></td>
-                    <td><input type="text" readonly class="form-control-plaintext" id="sph-price-liter"></td>
-                    <td><input type="text" readonly class="form-control-plaintext" id="sph-biaya-lokasi"></td>
-                    <td><input type="text" readonly class="form-control-plaintext" id="sph-ppn"></td>
-                    <td><input type="text" readonly class="form-control-plaintext" id="sph-pbbkb"></td>
-                    <td><input type="text" readonly class="form-control-plaintext" id="sph-total-price"></td>
-                    <td><input type="text" readonly class="form-control-plaintext" id="sph-pay-method"></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-          <div class="mb-2">
-            <label class="fw-bold small">Masukan Nomer PO Customer <span class="text-danger">(*Pastikan Nomer PO Sesuai)</span></label>
-            <input type="text" name="po_no" id="modal-po-no" class="form-control" required minlength="3" autocomplete="off" style="border:1px solid #495057; box-shadow:none;">
-            <div class="form-text">Minimal 3 karakter.</div>
-          </div>
-          <div class="mb-2">
-            <label class="fw-bold small">Purchase Order List <span class="text-danger">(*Pastikan item dari PO sudah sesuai)</span></label>
-            <table class="table table-bordered" id="modal-po-items-table">
-              <thead class="bg-primary text-white">
-                <tr>
-                  <th class="text-center text-wrap">NO</th>
-                  <th class="text-center text-wrap">Nama Item</th>
-                  <th class="text-center text-wrap" style="width: 120px;">Quantity</th>
-                  <th class="text-center text-wrap">Harga</th>
-                  <th class="text-center text-wrap">Jumlah</th>
-                  <th class="text-center text-wrap">Ex PBBKB</th>
-                  <th class="text-center text-wrap">#</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-            <button type="button" class="btn btn-outline-primary btn-sm" id="btnAddPOItem" style="border-radius:8px;">Tambah Item</button>
-          </div>
-          <div class="row">
-            <div class="col-sm-8 text-end fw-bold">Sub Total:</div>
-            <div class="col-sm-4"><span id="po-subtotal">0</span></div>
-            <div class="col-sm-8 text-end fw-bold">PPN 11%:</div>
-            <div class="col-sm-4"><span id="po-ppn">0</span></div>
-            <div class="col-sm-8 text-end fw-bold">PBBKB 7.5%:</div>
-            <div class="col-sm-4"><span id="po-pbbkb">0</span></div>
-            <div class="col-sm-8 text-end fw-bold">PPH 23 2%:</div>
-            <div class="col-sm-4"><span id="po-pph">0</span></div>
-            <div class="col-sm-8 text-end fw-bold">Total Tagihan:</div>
-            <div class="col-sm-4"><span id="po-total">0</span></div>
-          </div>
-          <div class="row mt-2">
-            <div class="col-12">
-              <span>Terbilang :</span>
-              <span id="po-terbilang" class="fw-bold"></span>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius:8px;">Tutup</button>
-          <button type="submit" class="btn btn-primary" id="btnSimpanPO" style="border-radius:8px;">Simpan</button>
-        </div>
-      </form>
-      <!-- Loading overlay -->
-      <div class="modal-loading-backdrop" id="modalTerimaPOLoading">
-        <div>
-          <div class="spinner-border text-primary" style="width:3rem;height:3rem;"></div>
-          <div class="mt-2 fw-bold text-primary">Memuat detail...</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
 <!-- Modal PDF Viewer -->
 <div class="modal fade" id="pdfModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-xl modal-dialog-centered">
@@ -329,9 +225,210 @@
     </div>
   </div>
 </div>
+
+<!-- Modal Tambah PO -->
+<div class="modal fade" id="modalTambahPO" tabindex="-1" aria-labelledby="modalTambahPOLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <form id="formTambahPO" enctype="multipart/form-data">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold" id="modalTambahPOLabel">Tambah PO</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body px-4 py-3">
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold small">Nomer SPH <span class="text-danger">*</span></label>
+              <select id="tambah-po-sph" name="sph_id" class="form-control select2" data-placeholder="Pilih Nomer SPH" style="width: 100%;" required>
+                <option value=""></option>
+              </select>
+              <div class="form-text">Pilih SPH yang telah disetujui</div>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold small">Nama Perusahaan</label>
+              <input type="text" id="tambah-po-nama-perusahaan" name="nama_perusahaan" class="form-control" readonly style="border:1px solid #495057; box-shadow:none; background-color:#f8f9fa;">
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-5 mb-3">
+              <label class="form-label fw-bold small">Nomer PO Customer <span class="text-danger">*</span></label>
+              <input type="text" id="tambah-po-no-customer" name="po_no_customer" class="form-control" required style="border:1px solid #495057; box-shadow:none;">
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label fw-bold small">Wilayah <span class="text-danger">*</span></label>
+              <select id="tambah-po-wilayah" name="wilayah" class="form-control select2" data-placeholder="Pilih Wilayah" style="width: 100%;" required>
+                <option value=""></option>
+              </select>
+            </div>
+            <div class="col-md-3 mb-3">
+              <label class="form-label fw-bold small">Seq No</label>
+              <input type="text" id="tambah-po-seq" name="no_seq" class="form-control" readonly style="border:1px solid #495057; box-shadow:none; background-color:#f8f9fa;">
+            </div>
+          </div>
+          <!-- Hidden Source field for seq generation -->
+          <input type="hidden" id="tambah-po-source" name="source">
+          <div class="row">
+            <div class="col-md-3 mb-3">
+              <label class="form-label fw-bold small">Qty <span class="text-danger">*</span></label>
+              <input type="number" id="tambah-po-qty" name="qty" class="form-control" required min="1" max="9999999" style="border:1px solid #495057; box-shadow:none;" placeholder="0">
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label fw-bold small">HSD Solar <span class="text-danger">*</span></label>
+              <input type="text" id="tambah-po-hsd-solar" name="hsd_solar" class="form-control currency-input" required style="border:1px solid #495057; box-shadow:none;" placeholder="Rp 0">
+            </div>
+            <div class="col-md-5 mb-3">
+              <label class="form-label fw-bold small">Ongkos Angkut</label>
+              <input type="text" id="tambah-po-ongkos-angkut" name="ongkos_angkut" class="form-control currency-input" style="border:1px solid #495057; box-shadow:none;" placeholder="Rp 0">
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold small">Sub Total</label>
+              <input type="text" id="tambah-po-subtotal" name="subtotal" class="form-control" readonly style="border:1px solid #495057; box-shadow:none; background-color:#f8f9fa;" value="Rp 0">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold small">PPN 11%</label>
+              <input type="text" id="tambah-po-ppn" name="ppn" class="form-control" readonly style="border:1px solid #495057; box-shadow:none; background-color:#f8f9fa;" value="Rp 0">
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label class="form-label fw-bold small">PBBKB</label>
+              <input type="text" id="tambah-po-pbbkb" name="pbbkb" class="form-control currency-input" style="border:1px solid #495057; box-shadow:none;" placeholder="Rp 0">
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label fw-bold small">PPH 23</label>
+              <input type="text" id="tambah-po-pph" name="pph" class="form-control currency-input" style="border:1px solid #495057; box-shadow:none;" placeholder="Rp 0">
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label fw-bold small">Transport</label>
+              <input type="text" id="tambah-po-transport" name="transport" class="form-control currency-input" style="border:1px solid #495057; box-shadow:none;" placeholder="Rp 0">
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold small">Total</label>
+              <input type="text" id="tambah-po-total" name="total" class="form-control fw-bold" readonly style="border:2px solid #495057; box-shadow:none; background-color:#f8f9fa; font-size:16px;" value="Rp 0">
+              <div class="mt-2">
+                <span class="fw-bold small">Terbilang:</span>
+                <span id="tambah-po-terbilang" class="fw-bold text-primary"></span>
+              </div>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold small">Upload File PO <span class="text-danger">*</span> <span class="text-muted">(PDF/Word, maks 1MB)</span></label>
+              <input type="file" id="tambah-po-file" name="file_po" class="form-control" accept=".pdf,.doc,.docx" required style="border:1px solid #495057; box-shadow:none;">
+              <div class="form-text">Hanya file PDF dan Word, maksimal 1MB</div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-12 mb-3">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="tambah-po-bypass" name="bypass" value="1">
+                <label class="form-check-label fw-bold" for="tambah-po-bypass">
+                  Bypass
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btnResetTambahPO" style="border-radius:8px;">Reset</button>
+          <button type="button" class="btn btn-danger" data-bs-dismiss="modal" style="border-radius:8px;">Tutup</button>
+          <button type="submit" class="btn btn-primary" id="btnSimpanTambahPO" style="border-radius:8px;">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Bulk PO -->
+<div class="modal fade" id="modalBulkPO" tabindex="-1" aria-labelledby="modalBulkPOLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width: 98%; width: 98%;">
+    <div class="modal-content">
+      <form id="formBulkPO" enctype="multipart/form-data">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold" id="modalBulkPOLabel">Bulk Tambah PO</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body px-4 py-3" style="max-height: 80vh; overflow-y: auto;">
+          <div class="mb-3 d-flex justify-content-between align-items-center">
+            <button type="button" class="btn btn-outline-primary btn-sm" id="btnAddBulkRow" style="border-radius:8px;">
+              <i class="fa fa-plus me-1"></i> Tambah Baris
+            </button>
+            <div id="bulk-progress-info" class="d-none">
+              <div class="progress" style="width: 300px; height: 25px;">
+                <div id="bulk-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+              </div>
+              <small class="text-muted" id="bulk-progress-text">Menyimpan 0 dari 0...</small>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-bordered" id="bulk-po-table">
+              <thead class="bg-primary text-white">
+                <tr>
+                  <th style="width: 50px;">No</th>
+                  <th style="min-width: 200px;">Nomer SPH *</th>
+                  <th style="min-width: 180px;">Nama Perusahaan</th>
+                  <th style="min-width: 150px;">Nomer PO Customer *</th>
+                  <th style="min-width: 120px;">Wilayah *</th>
+                  <th style="min-width: 100px;">Seq No</th>
+                  <th style="min-width: 100px;">Qty *</th>
+                  <th style="min-width: 150px;">HSD Solar *</th>
+                  <th style="min-width: 150px;">Ongkos Angkut</th>
+                  <th style="min-width: 120px;">Sub Total</th>
+                  <th style="min-width: 120px;">PPN 11%</th>
+                  <th style="min-width: 120px;">PBBKB</th>
+                  <th style="min-width: 120px;">PPH 23</th>
+                  <th style="min-width: 120px;">Transport</th>
+                  <th style="min-width: 150px;">Total</th>
+                  <th style="min-width: 200px;">Upload File PO *</th>
+                  <th style="width: 100px;">Bypass</th>
+                  <th style="width: 100px;">Status</th>
+                  <th style="width: 80px;">#</th>
+                </tr>
+              </thead>
+              <tbody id="bulk-po-tbody">
+                <!-- Rows will be added dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btnResetBulkPO" style="border-radius:8px;">Reset</button>
+          <button type="button" class="btn btn-danger" data-bs-dismiss="modal" style="border-radius:8px;">Tutup</button>
+          <button type="submit" class="btn btn-primary" id="btnSimpanBulkPO" style="border-radius:8px;">Simpan Semua</button>
+        </div>
+      </form>
+      <!-- Loading overlay -->
+      <div class="modal-loading-backdrop" id="bulkPOLoading" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.7); z-index: 2000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(6px); border-radius: 20px;">
+        <div class="text-center">
+          <div class="spinner-border text-primary" style="width:3rem;height:3rem;"></div>
+          <div class="mt-2 fw-bold text-primary" id="bulk-loading-text">Memproses...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 @endsection
 
 @section('scripts')
+<script>
+// Pastikan jQuery sudah di-load sebelum Select2
+if (typeof jQuery === 'undefined') {
+    console.error('jQuery is not loaded!');
+} else {
+    console.log('jQuery version:', jQuery.fn.jquery);
+}
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+<script>
+// Pastikan Select2 sudah di-load
+if (typeof jQuery.fn.select2 === 'undefined') {
+    console.error('Select2 is not loaded!');
+} else {
+    console.log('Select2 is loaded successfully');
+}
+</script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="{{ asset('assets/js/custom-card/custom-card.js') }}"></script>
 <script src="{{ asset('assets/js/datepicker/date-picker/datepicker.js') }}"></script>
@@ -347,8 +444,844 @@
 <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
 <script>
-let CURRENT_PO_ID = null;
+
+
 $(function(){
+// ========== FORM TAMBAH PO ==========
+// Function to refresh Seq No for Tambah PO
+function refreshSequenceNoTambahPO() {
+    let wilayah = $('#tambah-po-wilayah').val();
+    let source = $('#tambah-po-source').val();
+    
+    // Jika salah satu kosong, kosongkan field dan stop
+    if (!wilayah || !source) {
+        $('#tambah-po-seq').val('');
+        return;
+    }
+    
+    $.getJSON('/api/delivery-note-seq', { wilayah: wilayah, source: source })
+        .done(function(res) {
+            $('#tambah-po-seq').val(res.delivery_note || '');
+        })
+        .fail(function() {
+            $('#tambah-po-seq').val('');
+        });
+}
+
+// Initialize Wilayah Select2
+function initTambahPOWilayahSelect() {
+    // Destroy existing Select2 if any
+    if ($('#tambah-po-wilayah').hasClass('select2-hidden-accessible')) {
+        $('#tambah-po-wilayah').select2('destroy');
+    }
+    
+    // Load data wilayah
+    $.get('/api/master-wilayah/request', function(wilayahRes){
+        var wilayahList = Array.isArray(wilayahRes) ? wilayahRes : (wilayahRes.data || []);
+        var $wilayahSelect = $('#tambah-po-wilayah').html('<option value=""></option>');
+        wilayahList.forEach(function(w){
+            $wilayahSelect.append(`<option value="${w.value}">${w.code}</option>`);
+        });
+        
+        // Initialize Select2 for Wilayah
+        var $wilayahSelect = $('#tambah-po-wilayah');
+        $wilayahSelect.select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            placeholder: 'Pilih Wilayah',
+            dropdownParent: $('#modalTambahPO'),
+            allowClear: true
+        });
+        
+        // Event handler untuk generate Seq No saat wilayah dipilih/diganti
+        $wilayahSelect.off('change.select2').on('change.select2', function(e) {
+            refreshSequenceNoTambahPO();
+        });
+        
+        // Handle select2:select event - ensure the selected value is displayed correctly
+        $wilayahSelect.off('select2:select').on('select2:select', function(e) {
+            var data = e.params.data;
+            var $select = $(this);
+            
+            // Select2 should automatically set the value and update display
+            // But we ensure it's set correctly
+            if ($select.val() !== data.id) {
+                $select.val(data.id);
+            }
+            
+            // Force Select2 to update its display by triggering change
+            setTimeout(function() {
+                $select.trigger('change.select2');
+                refreshSequenceNoTambahPO();
+            }, 10);
+        });
+    });
+}
+
+// Button to open modal
+$('#btnTambahPO').on('click', function() {
+    resetTambahPOForm();
+    $('#modalTambahPO').modal('show');
+});
+
+// Initialize Select2 when modal is fully shown
+$('#modalTambahPO').on('shown.bs.modal', function () {
+    initTambahPOSPHSelect();
+    initTambahPOWilayahSelect();
+    initCurrencyInputs(); // Re-initialize currency inputs
+});
+
+// Initialize Select2 for SPH dropdown
+function initTambahPOSPHSelect() {
+    // Destroy existing Select2 if any
+    if ($('#tambah-po-sph').hasClass('select2-hidden-accessible')) {
+        $('#tambah-po-sph').select2('destroy');
+    }
+    
+    $('#tambah-po-sph').select2({
+        theme: 'bootstrap-5',
+        width: '100%',
+        placeholder: 'Pilih Nomer SPH',
+        allowClear: true,
+        dropdownParent: $('#modalTambahPO'),
+        ajax: {
+            url: '/api/good-receipts/sph-approved',
+            dataType: 'json',
+            delay: 250,
+            data: function (params) {
+                return {
+                    search: params.term || '',
+                    page: params.page || 1
+                };
+            },
+            processResults: function (data) {
+                if (data.success && data.data) {
+                    return {
+                        results: data.data.map(function(item) {
+                            return {
+                                id: item.id,
+                                text: item.kode_sph + ' - ' + item.comp_name,
+                                kode_sph: item.kode_sph,
+                                comp_name: item.comp_name,
+                                tipe_sph: item.tipe_sph
+                            };
+                        })
+                    };
+                }
+                return { results: [] };
+            },
+            cache: true
+        },
+        minimumInputLength: 0
+    });
+
+    // Handle SPH selection change
+    $('#tambah-po-sph').off('select2:select').on('select2:select', function (e) {
+        var data = e.params.data;
+        $('#tambah-po-nama-perusahaan').val(data.comp_name || '');
+        $('#tambah-po-source').val(data.tipe_sph || '');
+        calculateTambahPOTotal();
+        // Generate Seq No if wilayah already selected
+        refreshSequenceNoTambahPO();
+    });
+
+    // Clear fields when SPH is cleared
+    $('#tambah-po-sph').off('select2:clear').on('select2:clear', function () {
+        $('#tambah-po-nama-perusahaan').val('');
+        $('#tambah-po-source').val('');
+        $('#tambah-po-seq').val('');
+        calculateTambahPOTotal();
+    });
+}
+
+// Currency formatting function
+function formatCurrencyInput(value) {
+    // Remove all non-digit characters
+    var num = value.toString().replace(/[^\d]/g, '');
+    if (num === '') return '';
+    // Format as currency
+    return 'Rp ' + parseFloat(num).toLocaleString('id-ID');
+}
+
+// Parse currency value to number
+function parseCurrencyValue(value) {
+    if (!value) return 0;
+    var num = value.toString().replace(/[^\d]/g, '');
+    return parseFloat(num) || 0;
+}
+
+// Initialize currency inputs
+function initCurrencyInputs() {
+    // Use event delegation to handle dynamically added elements
+    $(document).off('input', '.currency-input').on('input', '.currency-input', function() {
+        var $this = $(this);
+        var cursorPos = this.selectionStart;
+        var oldValue = $this.val();
+        var num = oldValue.toString().replace(/[^\d]/g, '');
+        
+        if (num === '') {
+            $this.val('');
+        } else {
+            var formatted = formatCurrencyInput(num);
+            $this.val(formatted);
+            
+            // Restore cursor position
+            var newCursorPos = cursorPos + (formatted.length - oldValue.length);
+            this.setSelectionRange(newCursorPos, newCursorPos);
+        }
+        
+        calculateTambahPOTotal();
+    });
+
+    // Format on blur
+    $(document).off('blur', '.currency-input').on('blur', '.currency-input', function() {
+        var num = parseCurrencyValue($(this).val());
+        if (num > 0) {
+            $(this).val(formatCurrencyInput(num.toString()));
+        } else {
+            $(this).val('');
+        }
+    });
+    
+    // Event listener for Qty
+    $('#tambah-po-qty').off('input change').on('input change', function() {
+        var qty = parseFloat($(this).val()) || 0;
+        // Limit to 7 digits (max 9999999)
+        if (qty > 9999999) {
+            $(this).val(9999999);
+            qty = 9999999;
+        }
+        calculateTambahPOTotal();
+    });
+}
+
+// Calculate totals
+function calculateTambahPOTotal() {
+    var qty = parseFloat($('#tambah-po-qty').val()) || 0;
+    var hsdSolar = parseCurrencyValue($('#tambah-po-hsd-solar').val());
+    var ongkosAngkut = parseCurrencyValue($('#tambah-po-ongkos-angkut').val());
+    // Sub Total = (Qty X HSD Solar) + (Qty X Ongkos Angkut)
+    var subtotal = (qty * hsdSolar) + (qty * ongkosAngkut);
+    var ppn = subtotal * 0.11;
+    var pbbkb = parseCurrencyValue($('#tambah-po-pbbkb').val());
+    var pph = parseCurrencyValue($('#tambah-po-pph').val());
+    var transport = parseCurrencyValue($('#tambah-po-transport').val());
+    var total = subtotal + ppn + pbbkb + pph + transport;
+
+    $('#tambah-po-subtotal').val(formatCurrencyInput(subtotal.toString()));
+    $('#tambah-po-ppn').val(formatCurrencyInput(ppn.toString()));
+    $('#tambah-po-total').val(formatCurrencyInput(total.toString()));
+    
+    // Update terbilang
+    if (total > 0) {
+        $('#tambah-po-terbilang').text(formatTerbilang(Math.floor(total)));
+    } else {
+        $('#tambah-po-terbilang').text('');
+    }
+}
+
+// File upload validation
+$('#tambah-po-file').on('change', function() {
+    var file = this.files[0];
+    if (!file) return;
+
+    var maxSize = 1 * 1024 * 1024; // 1MB
+    var allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    var allowedExtensions = ['.pdf', '.doc', '.docx'];
+
+    // Check file size
+    if (file.size > maxSize) {
+        Swal.fire('Error!', 'Ukuran file maksimal 1MB', 'error');
+        $(this).val('');
+        return;
+    }
+
+    // Check file type
+    var fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+    if (!allowedExtensions.includes(fileExtension)) {
+        Swal.fire('Error!', 'Hanya file PDF dan Word yang diperbolehkan', 'error');
+        $(this).val('');
+        return;
+    }
+});
+
+// Reset button with confirmation
+$('#btnResetTambahPO').on('click', function() {
+    Swal.fire({
+        title: 'Konfirmasi Reset',
+        text: 'Anda yakin akan reset data ini?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Ya',
+        cancelButtonText: 'Tidak',
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            resetTambahPOForm();
+            Swal.fire('Berhasil!', 'Form telah direset', 'success');
+        }
+    });
+});
+
+// Reset form function
+function resetTambahPOForm() {
+    $('#formTambahPO')[0].reset();
+    if ($('#tambah-po-sph').hasClass('select2-hidden-accessible')) {
+        $('#tambah-po-sph').val(null).trigger('change');
+    } else {
+        $('#tambah-po-sph').val(null);
+    }
+    if ($('#tambah-po-wilayah').hasClass('select2-hidden-accessible')) {
+        $('#tambah-po-wilayah').val(null).trigger('change');
+    } else {
+        $('#tambah-po-wilayah').val(null);
+    }
+    $('#tambah-po-nama-perusahaan').val('');
+    $('#tambah-po-source').val('');
+    $('#tambah-po-seq').val('');
+    $('#tambah-po-qty').val('');
+    $('#tambah-po-subtotal').val('Rp 0');
+    $('#tambah-po-ppn').val('Rp 0');
+    $('#tambah-po-total').val('Rp 0');
+    $('#tambah-po-terbilang').text('');
+    $('#tambah-po-pbbkb').val('');
+    $('#tambah-po-pph').val('');
+    $('#tambah-po-transport').val('');
+    $('#tambah-po-hsd-solar').val('');
+    $('#tambah-po-ongkos-angkut').val('');
+    $('#tambah-po-bypass').prop('checked', false);
+}
+
+// Form submission
+$('#formTambahPO').on('submit', function(e) {
+    e.preventDefault();
+    
+    var $btn = $('#btnSimpanTambahPO');
+    $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Menyimpan...');
+
+    var formData = new FormData(this);
+    
+    // Convert currency values to numbers
+    formData.set('hsd_solar', parseCurrencyValue($('#tambah-po-hsd-solar').val()));
+    formData.set('ongkos_angkut', parseCurrencyValue($('#tambah-po-ongkos-angkut').val()) || 0);
+    formData.set('subtotal', parseCurrencyValue($('#tambah-po-subtotal').val()));
+    formData.set('ppn', parseCurrencyValue($('#tambah-po-ppn').val()));
+    formData.set('pbbkb', parseCurrencyValue($('#tambah-po-pbbkb').val()) || 0);
+    formData.set('pph', parseCurrencyValue($('#tambah-po-pph').val()) || 0);
+    formData.set('transport', parseCurrencyValue($('#tambah-po-transport').val()) || 0);
+    formData.set('total', parseCurrencyValue($('#tambah-po-total').val()));
+    formData.set('no_seq', $('#tambah-po-seq').val().trim());
+    formData.set('wilayah', $('#tambah-po-wilayah').val());
+    // Set bypass value: 1 if checked, 0 if not
+    formData.set('bypass', $('#tambah-po-bypass').is(':checked') ? '1' : '0');
+    // Set terbilang
+    formData.set('terbilang', $('#tambah-po-terbilang').text().trim());
+
+    $.ajax({
+        url: '/api/good-receipts/tambah-po',
+        method: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        }
+    })
+    .done(function(res) {
+        $('#modalTambahPO').modal('hide');
+        Swal.fire('Berhasil!', res.message || 'PO berhasil ditambahkan', 'success');
+        resetTambahPOForm();
+        fetchList(); // Refresh data table
+    })
+    .fail(function(xhr) {
+        var errorMsg = xhr.responseJSON?.message || 'Gagal menyimpan PO!';
+        Swal.fire('Gagal!', errorMsg, 'error');
+    })
+    .always(function() {
+        $btn.prop('disabled', false).html('Simpan');
+    });
+});
+
+// Initialize currency inputs on page load
+initCurrencyInputs();
+
+// Cleanup when modal is closed
+$('#modalTambahPO').on('hidden.bs.modal', function () {
+    resetTambahPOForm();
+    // Destroy Select2 when modal is closed
+    if ($('#tambah-po-sph').hasClass('select2-hidden-accessible')) {
+        $('#tambah-po-sph').select2('destroy');
+    }
+    if ($('#tambah-po-wilayah').hasClass('select2-hidden-accessible')) {
+        $('#tambah-po-wilayah').select2('destroy');
+    }
+});
+
+// ========== BULK PO ==========
+let bulkPORowCounter = 0;
+
+// Button to open Bulk PO modal
+$('#btnBulkPO').on('click', function() {
+    resetBulkPOForm();
+    $('#modalBulkPO').removeClass('loading');
+    $('#bulkPOLoading').hide();
+    $('#modalBulkPO').modal('show');
+    // Add first row
+    setTimeout(function() {
+        addBulkPORow();
+    }, 100);
+});
+
+// Add new row to Bulk PO table
+function addBulkPORow() {
+    bulkPORowCounter++;
+    const rowId = 'bulk-row-' + bulkPORowCounter;
+    const rowHtml = `
+        <tr id="${rowId}" data-row-id="${bulkPORowCounter}">
+            <td class="text-center align-middle">${bulkPORowCounter}</td>
+            <td>
+                <select class="form-control bulk-sph select2" data-placeholder="Pilih SPH" style="width: 100%;" required>
+                    <option value=""></option>
+                </select>
+                <input type="hidden" class="bulk-sph-id" name="bulk[${bulkPORowCounter}][sph_id]">
+                <input type="hidden" class="bulk-source" name="bulk[${bulkPORowCounter}][source]">
+            </td>
+            <td>
+                <input type="text" class="form-control bulk-nama-perusahaan" name="bulk[${bulkPORowCounter}][nama_perusahaan]" readonly style="border:1px solid #495057; box-shadow:none; background-color:#f8f9fa;">
+            </td>
+            <td>
+                <input type="text" class="form-control bulk-po-no-customer" name="bulk[${bulkPORowCounter}][po_no_customer]" required style="border:1px solid #495057; box-shadow:none;">
+            </td>
+            <td>
+                <select class="form-control bulk-wilayah select2" data-placeholder="Pilih Wilayah" style="width: 100%;" required>
+                    <option value=""></option>
+                </select>
+                <input type="hidden" class="bulk-wilayah-val" name="bulk[${bulkPORowCounter}][wilayah]">
+            </td>
+            <td>
+                <input type="text" class="form-control bulk-seq" name="bulk[${bulkPORowCounter}][no_seq]" readonly style="border:1px solid #495057; box-shadow:none; background-color:#f8f9fa;">
+            </td>
+            <td>
+                <input type="number" class="form-control bulk-qty" name="bulk[${bulkPORowCounter}][qty]" required min="1" max="9999999" style="border:1px solid #495057; box-shadow:none;" placeholder="0">
+            </td>
+            <td>
+                <input type="text" class="form-control bulk-hsd-solar currency-input" name="bulk[${bulkPORowCounter}][hsd_solar]" required style="border:1px solid #495057; box-shadow:none;" placeholder="Rp 0">
+            </td>
+            <td>
+                <input type="text" class="form-control bulk-ongkos-angkut currency-input" name="bulk[${bulkPORowCounter}][ongkos_angkut]" style="border:1px solid #495057; box-shadow:none;" placeholder="Rp 0">
+            </td>
+            <td>
+                <input type="text" class="form-control bulk-subtotal" readonly style="border:1px solid #495057; box-shadow:none; background-color:#f8f9fa;" value="Rp 0">
+            </td>
+            <td>
+                <input type="text" class="form-control bulk-ppn" readonly style="border:1px solid #495057; box-shadow:none; background-color:#f8f9fa;" value="Rp 0">
+            </td>
+            <td>
+                <input type="text" class="form-control bulk-pbbkb currency-input" name="bulk[${bulkPORowCounter}][pbbkb]" style="border:1px solid #495057; box-shadow:none;" placeholder="Rp 0">
+            </td>
+            <td>
+                <input type="text" class="form-control bulk-pph currency-input" name="bulk[${bulkPORowCounter}][pph]" style="border:1px solid #495057; box-shadow:none;" placeholder="Rp 0">
+            </td>
+            <td>
+                <input type="text" class="form-control bulk-transport currency-input" name="bulk[${bulkPORowCounter}][transport]" style="border:1px solid #495057; box-shadow:none;" placeholder="Rp 0">
+            </td>
+            <td>
+                <input type="text" class="form-control bulk-total fw-bold" readonly style="border:2px solid #495057; box-shadow:none; background-color:#f8f9fa;" value="Rp 0">
+            </td>
+            <td>
+                <input type="file" class="form-control bulk-file" name="bulk[${bulkPORowCounter}][file_po]" accept=".pdf,.doc,.docx" required style="border:1px solid #495057; box-shadow:none;">
+            </td>
+            <td class="text-center align-middle">
+                <div class="form-check d-flex justify-content-center">
+                    <input class="form-check-input bulk-bypass" type="checkbox" name="bulk[${bulkPORowCounter}][bypass]" value="1" id="bulk-bypass-${bulkPORowCounter}">
+                </div>
+            </td>
+            <td class="text-center align-middle bulk-row-status pending" data-status="pending">
+                <span class="status-text">-</span>
+            </td>
+            <td class="text-center align-middle">
+                <button type="button" class="btn btn-danger btn-sm btn-remove-bulk-row" style="border-radius:8px;">&times;</button>
+            </td>
+        </tr>
+    `;
+    $('#bulk-po-tbody').append(rowHtml);
+    
+    // Initialize Select2 for SPH and Wilayah
+    initBulkRowSelect2(rowId);
+    
+    // Initialize currency inputs
+    initCurrencyInputs();
+}
+
+// Initialize Select2 for a bulk row
+function initBulkRowSelect2(rowId) {
+    const $row = $('#' + rowId);
+    const $sphSelect = $row.find('.bulk-sph');
+    const $wilayahSelect = $row.find('.bulk-wilayah');
+    
+    // Initialize SPH Select2
+    $sphSelect.select2({
+        theme: 'bootstrap-5',
+        width: '100%',
+        placeholder: 'Pilih SPH',
+        dropdownParent: $('#modalBulkPO'),
+        allowClear: true,
+        ajax: {
+            url: '/api/good-receipts/sph-approved',
+            dataType: 'json',
+            delay: 250,
+            data: function (params) {
+                return {
+                    search: params.term || '',
+                    page: params.page || 1
+                };
+            },
+            processResults: function (data) {
+                if (data.success && data.data) {
+                    return {
+                        results: data.data.map(function(item) {
+                            return {
+                                id: item.id,
+                                text: item.kode_sph + ' - ' + item.comp_name,
+                                kode_sph: item.kode_sph,
+                                comp_name: item.comp_name,
+                                tipe_sph: item.tipe_sph
+                            };
+                        })
+                    };
+                }
+                return { results: [] };
+            },
+            cache: true
+        },
+        minimumInputLength: 0
+    });
+    
+    // Handle SPH selection
+    $sphSelect.on('select2:select', function(e) {
+        const data = e.params.data;
+        $row.find('.bulk-sph-id').val(data.id);
+        $row.find('.bulk-nama-perusahaan').val(data.comp_name || '');
+        $row.find('.bulk-source').val(data.tipe_sph || '');
+        calculateBulkRowTotal(rowId);
+        refreshBulkRowSeq(rowId);
+    });
+    
+    // Load Wilayah data
+    $.get('/api/master-wilayah/request', function(wilayahRes){
+        const wilayahList = Array.isArray(wilayahRes) ? wilayahRes : (wilayahRes.data || []);
+        wilayahList.forEach(function(w){
+            $wilayahSelect.append(`<option value="${w.value}">${w.code}</option>`);
+        });
+        
+        // Initialize Wilayah Select2
+        $wilayahSelect.select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            placeholder: 'Pilih Wilayah',
+            dropdownParent: $('#modalBulkPO'),
+            allowClear: true
+        });
+        
+        // Handle Wilayah selection
+        $wilayahSelect.on('select2:select', function(e) {
+            const selectedValue = $(this).val();
+            $row.find('.bulk-wilayah-val').val(selectedValue);
+            refreshBulkRowSeq(rowId);
+        });
+    });
+}
+
+// Refresh Seq No for a bulk row
+function refreshBulkRowSeq(rowId) {
+    const $row = $('#' + rowId);
+    const wilayah = $row.find('.bulk-wilayah').val();
+    const source = $row.find('.bulk-source').val();
+    
+    if (!wilayah || !source) {
+        $row.find('.bulk-seq').val('');
+        return;
+    }
+    
+    $.getJSON('/api/delivery-note-seq', { wilayah: wilayah, source: source })
+        .done(function(res) {
+            $row.find('.bulk-seq').val(res.delivery_note || '');
+        })
+        .fail(function() {
+            $row.find('.bulk-seq').val('');
+        });
+}
+
+// Calculate total for a bulk row
+function calculateBulkRowTotal(rowId) {
+    const $row = $('#' + rowId);
+    const qty = parseFloat($row.find('.bulk-qty').val()) || 0;
+    const hsdSolar = parseCurrencyValue($row.find('.bulk-hsd-solar').val());
+    const ongkosAngkut = parseCurrencyValue($row.find('.bulk-ongkos-angkut').val());
+    const subtotal = (qty * hsdSolar) + (qty * ongkosAngkut);
+    const ppn = subtotal * 0.11;
+    const pbbkb = parseCurrencyValue($row.find('.bulk-pbbkb').val());
+    const pph = parseCurrencyValue($row.find('.bulk-pph').val());
+    const transport = parseCurrencyValue($row.find('.bulk-transport').val());
+    const total = subtotal + ppn + pbbkb + pph + transport;
+    
+    $row.find('.bulk-subtotal').val(formatCurrencyInput(subtotal.toString()));
+    $row.find('.bulk-ppn').val(formatCurrencyInput(ppn.toString()));
+    $row.find('.bulk-total').val(formatCurrencyInput(total.toString()));
+}
+
+// Event handlers for bulk rows
+$(document).on('click', '#btnAddBulkRow', function() {
+    addBulkPORow();
+});
+
+$(document).on('click', '.btn-remove-bulk-row', function() {
+    $(this).closest('tr').remove();
+    // Renumber rows
+    $('#bulk-po-tbody tr').each(function(index) {
+        $(this).find('td:first').text(index + 1);
+    });
+});
+
+$(document).on('input change', '.bulk-qty, .bulk-hsd-solar, .bulk-ongkos-angkut, .bulk-pbbkb, .bulk-pph, .bulk-transport', function() {
+    const rowId = $(this).closest('tr').attr('id');
+    if (rowId) {
+        calculateBulkRowTotal(rowId);
+    }
+});
+
+// File upload validation for bulk PO
+$(document).on('change', '.bulk-file', function() {
+    const file = this.files[0];
+    if (!file) return;
+    
+    const maxSize = 1 * 1024 * 1024; // 1MB
+    const allowedExtensions = ['.pdf', '.doc', '.docx'];
+    
+    // Check file size
+    if (file.size > maxSize) {
+        Swal.fire('Error!', 'Ukuran file maksimal 1MB', 'error');
+        $(this).val('');
+        return;
+    }
+    
+    // Check file type
+    const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+    if (!allowedExtensions.includes(fileExtension)) {
+        Swal.fire('Error!', 'Hanya file PDF dan Word yang diperbolehkan', 'error');
+        $(this).val('');
+        return;
+    }
+});
+
+// Reset Bulk PO button
+$('#btnResetBulkPO').on('click', function() {
+    Swal.fire({
+        title: 'Konfirmasi Reset',
+        text: 'Anda yakin akan reset data ini?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Ya',
+        cancelButtonText: 'Tidak',
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            resetBulkPOForm();
+            Swal.fire('Berhasil!', 'Form telah direset', 'success');
+        }
+    });
+});
+
+// Reset Bulk PO form
+function resetBulkPOForm() {
+    $('#bulk-po-tbody').html('');
+    bulkPORowCounter = 0;
+    $('#bulk-progress-info').addClass('d-none');
+    $('#bulk-progress-bar').css('width', '0%');
+    $('#bulk-progress-text').text('Menyimpan 0 dari 0...');
+}
+
+// Submit Bulk PO form
+$('#formBulkPO').on('submit', function(e) {
+    e.preventDefault();
+    
+    const $btn = $('#btnSimpanBulkPO');
+    $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Menyimpan...');
+    
+    const rows = [];
+    const rowElements = [];
+    let hasError = false;
+    
+    $('#bulk-po-tbody tr').each(function() {
+        const $row = $(this);
+        const rowData = {
+            sph_id: $row.find('.bulk-sph-id').val(),
+            nama_perusahaan: $row.find('.bulk-nama-perusahaan').val(),
+            po_no_customer: $row.find('.bulk-po-no-customer').val(),
+            wilayah: $row.find('.bulk-wilayah').val(),
+            no_seq: $row.find('.bulk-seq').val(),
+            source: $row.find('.bulk-source').val(),
+            qty: parseFloat($row.find('.bulk-qty').val()) || 0,
+            hsd_solar: parseCurrencyValue($row.find('.bulk-hsd-solar').val()),
+            ongkos_angkut: parseCurrencyValue($row.find('.bulk-ongkos-angkut').val()) || 0,
+            subtotal: parseCurrencyValue($row.find('.bulk-subtotal').val()),
+            ppn: parseCurrencyValue($row.find('.bulk-ppn').val()),
+            pbbkb: parseCurrencyValue($row.find('.bulk-pbbkb').val()) || 0,
+            pph: parseCurrencyValue($row.find('.bulk-pph').val()) || 0,
+            transport: parseCurrencyValue($row.find('.bulk-transport').val()) || 0,
+            total: parseCurrencyValue($row.find('.bulk-total').val()),
+            file_po: $row.find('.bulk-file')[0].files[0],
+            bypass: $row.find('.bulk-bypass').is(':checked') ? '1' : '0',
+            terbilang: formatTerbilang(Math.floor(parseCurrencyValue($row.find('.bulk-total').val())))
+        };
+        
+        if (!rowData.sph_id || !rowData.po_no_customer || !rowData.wilayah || !rowData.qty || !rowData.hsd_solar || !rowData.file_po) {
+            hasError = true;
+            return false;
+        }
+        
+        rows.push(rowData);
+        rowElements.push($row);
+    });
+    
+    if (hasError || rows.length === 0) {
+        Swal.fire('Error!', 'Pastikan semua field required terisi dengan benar', 'error');
+        $btn.prop('disabled', false).html('Simpan Semua');
+        return;
+    }
+    
+    // Show loading overlay and prevent modal close
+    $('#modalBulkPO').addClass('loading');
+    $('#bulkPOLoading').show();
+    $('#bulk-progress-info').removeClass('d-none');
+    
+    // Prevent modal close
+    const modalInstance = bootstrap.Modal.getInstance($('#modalBulkPO')[0]);
+    if (modalInstance) {
+        modalInstance._config.backdrop = 'static';
+        modalInstance._config.keyboard = false;
+    }
+    
+    // Disable close button
+    $('#modalBulkPO .btn-close, #modalBulkPO [data-bs-dismiss="modal"]').prop('disabled', true).css('pointer-events', 'none');
+    
+    // Reset all row statuses to pending
+    rowElements.forEach(function($row) {
+        updateBulkRowStatus($row, 'pending', '-');
+    });
+    
+    // Submit each row
+    let successCount = 0;
+    let failCount = 0;
+    let completed = 0;
+    const totalRows = rows.length;
+    
+    function updateProgress() {
+        const progress = Math.round((completed / totalRows) * 100);
+        $('#bulk-progress-bar').css('width', progress + '%');
+        $('#bulk-progress-text').text(`Menyimpan ${completed} dari ${totalRows}...`);
+        $('#bulk-loading-text').text(`Memproses ${completed} dari ${totalRows} PO...`);
+    }
+    
+    rows.forEach(function(rowData, index) {
+        const $row = rowElements[index];
+        updateBulkRowStatus($row, 'processing', 'Memproses...');
+        
+        const formData = new FormData();
+        Object.keys(rowData).forEach(function(key) {
+            if (rowData[key] !== null && rowData[key] !== undefined) {
+                formData.append(key, rowData[key]);
+            }
+        });
+        
+        $.ajax({
+            url: '/api/good-receipts/tambah-po',
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            }
+        })
+        .done(function(res) {
+            successCount++;
+            updateBulkRowStatus($row, 'success', 'Berhasil');
+        })
+        .fail(function(xhr) {
+            failCount++;
+            const errorMsg = xhr.responseJSON?.message || 'Gagal';
+            updateBulkRowStatus($row, 'error', 'Gagal');
+        })
+        .always(function() {
+            completed++;
+            updateProgress();
+            
+            if (completed === totalRows) {
+                // Hide loading overlay
+                setTimeout(function() {
+                    $('#modalBulkPO').removeClass('loading');
+                    $('#bulkPOLoading').hide();
+                    $('#bulk-progress-info').addClass('d-none');
+                    
+                    // Re-enable modal close
+                    const modalInstance = bootstrap.Modal.getInstance($('#modalBulkPO')[0]);
+                    if (modalInstance) {
+                        modalInstance._config.backdrop = true;
+                        modalInstance._config.keyboard = true;
+                    }
+                    $('#modalBulkPO .btn-close, #modalBulkPO [data-bs-dismiss="modal"]').prop('disabled', false).css('pointer-events', 'auto');
+                    
+                    $('#modalBulkPO').modal('hide');
+                    
+                    if (failCount === 0) {
+                        Swal.fire('Berhasil!', `Semua ${successCount} PO berhasil ditambahkan`, 'success');
+                    } else {
+                        Swal.fire('Perhatian!', `${successCount} PO berhasil, ${failCount} PO gagal`, 'warning');
+                    }
+                    resetBulkPOForm();
+                    fetchList();
+                    $btn.prop('disabled', false).html('Simpan Semua');
+                }, 500);
+            }
+        });
+    });
+});
+
+// Update status for a bulk row
+function updateBulkRowStatus($row, status, text) {
+    const $statusCell = $row.find('.bulk-row-status');
+    $statusCell.removeClass('pending processing success error');
+    $statusCell.addClass(status);
+    $statusCell.attr('data-status', status);
+    $statusCell.find('.status-text').text(text);
+}
+
+// Cleanup when Bulk PO modal is closed
+$('#modalBulkPO').on('hidden.bs.modal', function () {
+    resetBulkPOForm();
+    // Destroy all Select2 instances
+    $('#bulk-po-tbody .select2').each(function() {
+        if ($(this).hasClass('select2-hidden-accessible')) {
+            $(this).select2('destroy');
+        }
+    });
+    // Reset modal state
+    $('#modalBulkPO').removeClass('loading');
+    $('#bulkPOLoading').hide();
+    const modalInstance = bootstrap.Modal.getInstance($('#modalBulkPO')[0]);
+    if (modalInstance) {
+        modalInstance._config.backdrop = true;
+        modalInstance._config.keyboard = true;
+    }
+    $('#modalBulkPO .btn-close, #modalBulkPO [data-bs-dismiss="modal"]').prop('disabled', false).css('pointer-events', 'auto');
+});
+// ========== END BULK PO ==========
+
+// ========== END FORM TAMBAH PO ==========
+
 // 1. Initialize DataTable
 var table = $.fn.dataTable.isDataTable('#basic-1')
     ? $('#basic-1').DataTable()
@@ -381,14 +1314,7 @@ function renderPoNo(item) {
         ${item.po_no}
         </span>`;
     }
-    return `<span class="badge bg-primary px-2 py-1 border border-1 border-dark btn-terima-po"
-        style="font-size:11px; cursor:pointer; border-radius:4px; display:inline-block; min-width:60px; text-align:center;"
-        data-po-id="${item.po_id}"
-        data-kode-sph="${item.kode_sph||''}"
-        data-nama-customer="${item.comp_name||''}"
-        id="btnTerimaPO_${item.po_id}">
-        Terima PO
-    </span>`;
+    return '-';
 }
 
 function renderSphNo(item) {
@@ -504,87 +1430,6 @@ function formatRupiah(x){
     return 'Rp ' + x.toLocaleString('id-ID',{ minimumFractionDigits:2 });
 }
 
-// Klik "Terima PO" badge
-$(document).on('click', '.btn-terima-po', function(){
-    console.log('✅ Click Terima PO Triggered');
-    console.log('Data attribute:', $(this).data());
-
-    const po_id = $(this).data('po-id');
-    if (!po_id) return;
-    CURRENT_PO_ID = po_id;
-    $('#formTerimaPO').trigger('reset');
-    $('#modal-po-items-table tbody').html('');
-    $('#modal-sph-code, #modal-customer, #modal-view-po, #po-subtotal, #po-ppn, #po-pbbkb, #po-pph, #po-total, #po-terbilang').text('0');
-
-    // Tampilkan modal lebih dulu, lalu loading overlay
-    $('#modalTerimaPO').modal('show');
-    $('#modalTerimaPO').addClass('loading');
-    $('#modalTerimaPOLoading').show();
-
-    $.get('/api/good-receipts/'+po_id+'/detail', function(res){
-        $('#modal-sph-code').text(res.kode_sph || '-');
-        $('#modal-customer').text(res.nama_customer || '-');
-
-        // Populate SPH detail table
-        if (res.data_sph) {
-            $('#sph-product').val(res.data_sph.product || '');
-            $('#sph-price-liter').val(formatRupiah(res.data_sph.price_liter || ''));
-            $('#sph-biaya-lokasi').val(res.data_sph.biaya_lokasi || '');
-            $('#sph-ppn').val(formatRupiah(res.data_sph.ppn || 0));
-            $('#sph-pbbkb').val(formatRupiah(res.data_sph.pbbkb || 0));
-            $('#sph-total-price').val(formatRupiah(res.data_sph.total_price || 0));
-            $('#sph-pay-method').val(res.data_sph.pay_method || '');
-        } else {
-            $('#sph-product, #sph-price-liter, #sph-biaya-lokasi, #sph-ppn, #sph-pbbkb, #sph-total-price, #sph-pay-method').val('');
-        }
-
-        if(res.items && res.items.length){
-            res.items.forEach((item, idx)=>{
-                addPOItemRow(idx+1, item.nama_item, item.qty, item.per_item, item.total_harga);
-            });
-        } else {
-            addPOItemRow(1, '', 0, 0, 0);
-        }
-    }).always(function(){
-        $('#modalTerimaPO').removeClass('loading');
-        $('#modalTerimaPOLoading').hide();
-    });
-});
-
-function addPOItemRow(no, nama='', qty=0, harga=0, jumlah=0){
-    let html = `<tr>
-        <td class="text-center align-middle">${no}</td>
-        <td><input type="text" class="form-control po-item-nama" value="${nama}" style="border:1px solid #495057;"></td>
-        <td><input type="number" min="0" class="form-control po-item-qty" value="${qty}" style="border:1px solid #495057;"></td>
-        <td><input type="number" min="0" class="form-control po-item-harga" value="${harga}" style="border:1px solid #495057;"></td>
-        <td class="po-item-jumlah text-center align-middle">${jumlah}</td>
-        <td class="text-center align-middle">
-          <input type="checkbox" class="form-check-input include-pbbkb" checked>
-        </td>
-        <td><button type="button" class="btn btn-danger btnRemovePOItem" style="border-radius:8px;">&times;</button></td>
-    </tr>`;
-    $('#modal-po-items-table tbody').append(html);
-    updatePOCalc();
-}
-$(document).on('click', '#btnAddPOItem', function(){
-    let count = $('#modal-po-items-table tbody tr').length+1;
-    addPOItemRow(count);
-});
-$(document).on('click', '.btnRemovePOItem', function(){
-    $(this).closest('tr').remove();
-    updatePOCalc();
-});
-$(document).on('input', '.po-item-qty, .po-item-harga', function(){
-    let $tr = $(this).closest('tr');
-    let qty = parseFloat($tr.find('.po-item-qty').val()) || 0;
-    let harga = parseFloat($tr.find('.po-item-harga').val()) || 0;
-    $tr.find('.po-item-jumlah').text(qty*harga);
-    updatePOCalc();
-});
-// Listen to PBBKB checkbox changes to recalculate
-$(document).on('change', '.include-pbbkb', function(){
-    updatePOCalc();
-});
 function toTerbilang(num) {
 const satuan = ['','satu','dua','tiga','empat','lima','enam','tujuh','delapan','sembilan','sepuluh','sebelas'];
 
@@ -624,180 +1469,11 @@ function formatTerbilang(n) {
 if (n === 0) return 'nol rupiah';
 return toTerbilang(n).trim() + ' rupiah';
 }
-function updatePOCalc(){
-let subtotal = 0;
-let subtotalPBBKB = 0;
-$('#modal-po-items-table tbody tr').each(function(){
-    let harga = parseFloat($(this).find('.po-item-harga').val()) || 0;
-    let qty = parseFloat($(this).find('.po-item-qty').val()) || 0;
-    let includePbbkb = $(this).find('.include-pbbkb').is(':checked');
-    subtotal += qty * harga;
-    if (includePbbkb) {
-      subtotalPBBKB += qty * harga;
-    }
-});
-let ppn    = subtotal * 0.11,
-    pbbkb  = subtotalPBBKB * 0.075,
-    pph    = subtotal * 0.02,
-    total  = subtotal + ppn + pbbkb + pph;
-
-$('#po-subtotal').text(subtotal.toLocaleString('id-ID'));
-$('#po-ppn').text(ppn.toLocaleString('id-ID'));
-$('#po-pbbkb').text(pbbkb.toLocaleString('id-ID'));
-$('#po-pph').text(pph.toLocaleString('id-ID'));
-$('#po-total').text(total.toLocaleString('id-ID'));
-$('#po-terbilang').text(subtotal === 0 ? '' : formatTerbilang(total));
-}
-
     fetchList();
-
-    // Refresh DataTable ketika modal benar-benar tertutup (setelah simpan/close)
-    $('#modalTerimaPO').on('hidden.bs.modal', function () {
-        console.log('Modal closed! Fetching list...');
-        fetchList();
-    });
-
-    // Handle Submit or Save
-    $('#formTerimaPO').on('submit', function(e){
-        e.preventDefault();
-        var $btn = $('#btnSimpanPO');
-        $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Sedang menyimpan...');
-
-        var form = this;
-        var formData = new FormData(form);
-
-        // Items, serialisasi sebagai JSON string
-        var items = [];
-        $('#modal-po-items-table tbody tr').each(function(idx){
-            var nama = $(this).find('.po-item-nama').val().trim();
-            var qty  = parseFloat($(this).find('.po-item-qty').val()) || 0;
-            var per  = parseFloat($(this).find('.po-item-harga').val()) || 0;
-            var tot  = qty * per;
-            items.push({ nama_item: nama, qty: qty, per_item: per, total_harga: tot });
-        });
-
-        // Hapus dulu jika sudah ada field items (jaga-jaga)
-        formData.delete('items');
-        // Tambahkan items sebagai JSON string
-        formData.append('items', JSON.stringify(items));
-
-        // Field numeric lain (pastikan up to date, replace/append saja)
-        formData.set('po_no', $('#modal-po-no').val().trim());
-        formData.set('sub_total', parseFloat($('#po-subtotal').text().replace(/\./g,'')) || 0);
-        formData.set('ppn', parseFloat($('#po-ppn').text().replace(/\./g,'')) || 0);
-        formData.set('pbbkb', parseFloat($('#po-pbbkb').text().replace(/\./g,'')) || 0);
-        formData.set('pph', parseFloat($('#po-pph').text().replace(/\./g,'')) || 0);
-        formData.set('total', parseFloat($('#po-total').text().replace(/\./g,'')) || 0);
-        formData.set('terbilang', $('#po-terbilang').text().trim());
-        formData.set('status', 1);
-
-        // Tentukan endpoint berdasarkan mode (revisi/update)
-        var endpoint = '/api/good-receipts/' + CURRENT_PO_ID +
-            ($('#modalTerimaPO').attr('data-mode') === 'revisi' ? '/revisi' : '/update');
-        $.ajax({
-            url: endpoint,
-            method: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-        })
-        .done(function(res){
-            $('#modalTerimaPO').modal('hide');
-            // Tidak perlu fetchList() di sini, cukup saat modal tertutup saja.
-            Swal.fire('Berhasil!', res.message || 'Berhasil disimpan', 'success');
-        })
-        .fail(function(xhr){
-            Swal.fire('Gagal!', xhr.responseJSON?.message || 'Gagal menyimpan!', 'error');
-        })
-        .always(function(){
-            $btn.prop('disabled', false).text('Simpan');
-            // Setelah submit, hapus marker mode revisi
-            $('#modalTerimaPO').removeAttr('data-mode');
-        });
-    });
-
-
-    // Handler tombol Revisi PO
-    $(document).on('click', '.btn-revisi-po', function(e){
-        e.preventDefault();
-        const po_id = $(this).data('po-id');
-        if (!po_id) return;
-        CURRENT_PO_ID = po_id;
-
-        // Set mode revisi, reset form dan fetch detail seperti Terima PO
-        $('#formTerimaPO').trigger('reset');
-        $('#modal-po-items-table tbody').html('');
-        $('#modal-sph-code, #modal-customer, #modal-view-po, #po-subtotal, #po-ppn, #po-pbbkb, #po-pph, #po-total, #po-terbilang').text('0');
-
-        // Tampilkan modal loading
-        $('#modalTerimaPO').modal('show');
-        $('#modalTerimaPO').addClass('loading');
-        $('#modalTerimaPOLoading').show();
-
-        // Fetch detail PO
-        $.get('/api/good-receipts/'+po_id+'/detail', function(res){
-            $('#modal-sph-code').text(res.kode_sph || '-');
-            $('#modal-customer').text(res.nama_customer || '-');
-            // Populate table dan field lain sesuai data
-            if (res.data_sph) {
-                $('#sph-product').val(res.data_sph.product || '');
-                $('#sph-price-liter').val(formatRupiah(res.data_sph.price_liter || ''));
-                $('#sph-biaya-lokasi').val(res.data_sph.biaya_lokasi || '');
-                $('#sph-ppn').val(formatRupiah(res.data_sph.ppn || 0));
-                $('#sph-pbbkb').val(formatRupiah(res.data_sph.pbbkb || 0));
-                $('#sph-total-price').val(formatRupiah(res.data_sph.total_price || 0));
-                $('#sph-pay-method').val(res.data_sph.pay_method || '');
-            } else {
-                $('#sph-product, #sph-price-liter, #sph-biaya-lokasi, #sph-ppn, #sph-pbbkb, #sph-total-price, #sph-pay-method').val('');
-            }
-            if(res.items && res.items.length){
-                res.items.forEach((item, idx)=>{
-                    addPOItemRow(idx+1, item.nama_item, item.qty, item.per_item, item.total_harga);
-                });
-            } else {
-                addPOItemRow(1, '', 0, 0, 0);
-            }
-        }).always(function(){
-            $('#modalTerimaPO').removeClass('loading');
-            $('#modalTerimaPOLoading').hide();
-        });
-
-        // Tambahkan marker/mode revisi
-        $('#modalTerimaPO').attr('data-mode', 'revisi');
-    });
 
 });
 </script>
 <script>
-        document.addEventListener('DOMContentLoaded', function () {
-        const fileInput = document.getElementById('file');
-        const pdfViewer = document.getElementById('pdfViewer');
-        const pdfFrame = document.getElementById('pdfFrame');
-        const uploadModal = document.getElementById('uploadModal');
-
-        // Event listener untuk menampilkan PDF saat file diunggah
-        fileInput.addEventListener('change', function () {
-            const file = fileInput.files[0];
-            if (file && file.type === 'application/pdf') {
-                const fileURL = URL.createObjectURL(file);
-                pdfFrame.src = fileURL;
-                pdfViewer.style.display = 'block';
-            } else {
-                // Reset input jika file bukan PDF
-                Swal.fire('Oops!', 'Hanya file PDF yang diperbolehkan.', 'warning');
-                fileInput.value = ''; // Reset input file
-                pdfFrame.src = '';
-                pdfViewer.style.display = 'none';
-            }
-        });
-
-        // Event listener untuk menyembunyikan PDF viewer saat modal ditutup
-        modalTerimaPO.addEventListener('hidden.bs.modal', function () {
-            pdfFrame.src = ''; // Reset src iframe
-            pdfViewer.style.display = 'none'; // Sembunyikan viewer
-            fileInput.value = ''; // Reset input file
-        });
-    });
 </script>
 <script>
 $(document).on('click', '.btn-view-pdf', function(e){

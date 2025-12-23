@@ -31,22 +31,8 @@
   </div>
   <!-- Container-fluid starts-->
 <div class="container-fluid general-widget">
-    <div class="row justify-content-center">
-        <div class="col-sm-6 col-lg-3">
-            <div class="card o-hidden">
-                <div class="card-header pb-0">
-                    <div class="d-flex">
-                        <div class="flex-grow-1">
-                            <p class="square-after f-w-600 header-text-primary">Total Invoice<i class="fa fa-circle"> </i></p>
-                            <h4 id="card-total_invoice">-</h4>
-                        </div>
-                        <div class="d-flex static-widget">
-                                <i data-feather="file-text" class="text-primary" style="width: 40px; height: 40px;"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    {{-- Baris 1: Terbayar dan Belum Terbayar --}}
+    <div class="row justify-content-center mb-3">
         <div class="col-sm-6 col-lg-3">
             <div class="card o-hidden product-widget">
                 <div class="card-header pb-0">
@@ -78,6 +64,54 @@
             </div>
         </div>
     </div>
+    {{-- Baris 2: Total Invoice, Total Terbayar, Total Belum Terbayar --}}
+    <div class="row justify-content-center">
+        <div class="col-sm-6 col-lg-3">
+            <div class="card o-hidden">
+                <div class="card-header pb-0">
+                    <div class="d-flex">
+                        <div class="flex-grow-1">
+                            <p class="square-after f-w-600 header-text-primary">Total Invoice<i class="fa fa-circle"> </i></p>
+                            <h4 id="card-total_invoice">-</h4>
+                        </div>
+                        <div class="d-flex static-widget">
+                            <i data-feather="file-text" class="text-primary" style="width: 40px; height: 40px;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card o-hidden product-widget">
+                <div class="card-header pb-0">
+                    <div class="d-flex">
+                        <div class="flex-grow-1">
+                            <p class="square-after f-w-600 header-text-success">Total Terbayar<i class="fa fa-circle"> </i></p>
+                            <h4 id="card-total-paid">-</h4>
+                        </div>
+                        <div class="d-flex static-widget">
+                            <i data-feather="dollar-sign" class="text-success" style="width: 40px; height: 40px;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card o-hidden message-widget">
+                <div class="card-header pb-0">
+                    <div class="d-flex">
+                        <div class="flex-grow-1">
+                            <p class="square-after f-w-600 header-text-danger">Total Belum Terbayar<i class="fa fa-circle"> </i></p>
+                            <h4 id="card-total-unpaid">-</h4>
+                        </div>
+                        <div class="d-flex static-widget">
+                            <i data-feather="x-circle" class="text-danger" style="width: 40px; height: 40px;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
   {{-- Datatable disini --}}
   <div class="col-sm-12">
@@ -88,9 +122,13 @@
               <span>Data semua invoice untuk finance tracking dan manajemen</span>
             </div>
             <div class="d-flex gap-2 mt-2 mt-md-0 align-items-center ms-auto">
+              <button type="button" class="btn btn-success" id="btn-create-invoice" style="color:#fff; border-radius:8px; padding:8px 16px; display:flex; align-items:center; gap:8px;" title="Buat Proforma Invoice Baru" onclick="window.location.href='/invoice/create'">
+                  <i class="fa fa-plus"></i>
+                  <span> Invoice</span>
+              </button>
               <button type="button" class="btn btn-success" id="btn-create-invoice" style="color:#fff; border-radius:8px; padding:8px 16px; display:flex; align-items:center; gap:8px;" title="Buat Proforma Invoice Baru" onclick="window.location.href='/invoice/proforma'">
                   <i class="fa fa-plus"></i>
-                  <span>Proforma Invoice</span>
+                  <span> Proforma Invoice</span>
               </button>
               <select class="form-select" id="filter-status" style="width:200px;max-width:220px;">
                 <option value="">Semua Status</option>
@@ -310,6 +348,8 @@ $(document).ready(function() {
                 $('#card-total_invoice').text(response.summary.total || 0);
                 $('#card-paid').text(response.summary.paid || 0);
                 $('#card-unpaid').text(response.summary.unpaid || 0);
+                $('#card-total-paid').text(response.summary.paid_invoices || 0);
+                $('#card-total-unpaid').text(response.summary.unpaid_invoices || 0);
             }
         });
     }

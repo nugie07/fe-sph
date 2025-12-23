@@ -111,17 +111,12 @@
                           <input type="text" name="delivery_to" id="sp_delivery_to" class="form-control" required>
                           <div class="invalid-feedback">Field Delivery To wajib diisi.</div>
                         </div>
-                        <div class="col-md-4">
-                          <label>Transport</label>
-                          <input type="text" id="sp_transport" class="form-control" required>
-                          <div class="invalid-feedback">Field Transport wajib diisi.</div>
-                        </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                           <label>Harga</label>
                           <input type="text" id="sp_harga" class="form-control" required>
                           <div class="invalid-feedback">Field Harga wajib diisi.</div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                           <label>Qty</label>
                           <input type="number" name="qty" id="sp_qty" class="form-control" readonly required>
                           <div class="invalid-feedback">Field Qty wajib diisi.</div>
@@ -134,8 +129,8 @@
                         <div class="col-md-4"><label>Total</label><input type="text" id="sp_total" class="form-control" readonly></div>
 
                         <!-- Hidden raw value inputs for decimal submission -->
-                        <input type="hidden" id="sp_transport_raw" name="transport">
                         <input type="hidden" id="sp_harga_raw" name="harga">
+                        <input type="hidden" id="sp_tipe_sph" name="tipe_sph">
                         <input type="hidden" id="sp_sub_total_raw" name="sub_total">
                         <input type="hidden" id="sp_ppn_raw" name="ppn">
                         <input type="hidden" id="sp_pbbkb_raw" name="pbbkb">
@@ -205,18 +200,33 @@ $(document).ready(function() {
         console.log('Raw field values:');
         console.log('sp_qty:', $modal.find('#sp_qty').val());
         console.log('sp_harga_raw:', $modal.find('#sp_harga_raw').val());
-        console.log('sp_transport_raw:', $modal.find('#sp_transport_raw').val());
 
         var qty = parseFloat($modal.find('#sp_qty').val().replace(/\D/g,'')) || 0;
         var harga = parseFloat($modal.find('#sp_harga_raw').val()) || 0;
-        var transport = parseFloat($modal.find('#sp_transport_raw').val()) || 0;
+        var tipeSph = $modal.find('#sp_tipe_sph').val() || '';
 
-        console.log('Modal values:', {qty: qty, harga: harga, transport: transport});
+        console.log('Modal values:', {qty: qty, harga: harga, tipeSph: tipeSph});
 
-        var subtotal = (qty * harga) + transport;
+        var subtotal = (qty * harga);
         var valPPN = subtotal * 0.11;
-        var valPBBKB = (qty * harga) * 0.075;
-        var valPPh = (qty * harga) * 0.03;
+        
+        // Logic untuk PPH dan PBBKB berdasarkan tipe_sph
+        var valPBBKB = 0;
+        var valPPh = 0;
+        if (tipeSph === 'MMTEI') {
+            // Auto calculate untuk MMTEI
+            valPBBKB = (qty * harga) * 0.075;
+            valPPh = (qty * harga) * 0.03;
+        } else if (tipeSph === 'IASE') {
+            // Set ke 0 untuk IASE
+            valPBBKB = 0;
+            valPPh = 0;
+        } else {
+            // Default: hitung seperti biasa jika tipe_sph belum di-set
+            valPBBKB = (qty * harga) * 0.075;
+            valPPh = (qty * harga) * 0.03;
+        }
+        
         var valBPH = (qty * harga) * 0.025;
         var total = subtotal + valPPN + valPBBKB + valPPh + valBPH;
 
@@ -267,7 +277,7 @@ $(document).ready(function() {
     // --- Event Listeners ---
     // Menggunakan event delegation untuk elemen yang mungkin ada di dalam modal
     // 'keyup' lebih responsif daripada 'input' atau 'change' untuk pemformatan
-    $(document).on('keyup', '#sp_transport, #sp_harga', formatAndCalc);
+    $(document).on('keyup', '#sp_harga', formatAndCalc);
 
     // Jika nilai Qty bisa berubah, event listener ini akan berguna
     $(document).on('keyup change', '#sp_qty', function() {
@@ -327,8 +337,7 @@ $(document).ready(function() {
 
     // Menjalankan kalkulasi saat modal pertama kali ditampilkan
     $('#modal-revisi-po-supplier').on('shown.bs.modal', function() {
-        // Memformat nilai awal transport dan harga saat modal dibuka
-        $('#sp_transport').trigger('keyup');
+        // Memformat nilai awal harga saat modal dibuka
         $('#sp_harga').trigger('keyup');
         // lalu panggil kalkulasi utama
         calcSupplierFieldsModal();

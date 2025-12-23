@@ -309,8 +309,8 @@
         function initializeDataTable() {
             vendorTable = $('#vendor-table').DataTable({
                 processing: true,
-                serverSide: false,
-                                ajax: {
+                serverSide: true,
+                ajax: {
                     url: '/api/supplier-transporter',
                     type: 'GET',
                     data: function(d) {
@@ -320,11 +320,15 @@
                         const searchValue = $('#company-search').val();
                         if (searchValue && searchValue.trim() !== '') {
                             params.search = searchValue.trim();
-                            return params; // Hanya kirim search parameter
+                            // When searching, still need pagination params
+                            params.page = Math.floor(d.start / d.length) + 1;
+                            params.per_page = d.length;
+                            return params;
                         }
 
                         // Jika tidak ada search, tambahkan parameter lainnya
-                        params.page = (d.start / d.length) + 1;
+                        // Calculate page number properly (DataTables uses 0-based start)
+                        params.page = Math.floor(d.start / d.length) + 1;
                         params.per_page = d.length;
                         params.status = 1; // Only active records
 
@@ -344,6 +348,12 @@
                             $('#total-supplier').text(json.summary.total_supplier || 0);
                             $('#total-transporter').text(json.summary.total_transporter || 0);
                         }
+                        
+                        // Map API response to DataTables expected format
+                        // DataTables expects: { data: [...], recordsTotal: number, recordsFiltered: number }
+                        json.recordsTotal = json.pagination ? json.pagination.total : 0;
+                        json.recordsFiltered = json.pagination ? json.pagination.total : 0;
+                        
                         return json.data || [];
                     }
                 },
@@ -351,7 +361,9 @@
                     {
                         data: null,
                         render: function (data, type, row, meta) {
-                            return meta.row + 1;
+                            // Calculate row number based on current page and per_page
+                            const pageInfo = vendorTable.page.info();
+                            return (pageInfo.page * pageInfo.length) + meta.row + 1;
                         },
                         orderable: false,
                         searchable: false

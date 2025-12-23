@@ -45,12 +45,23 @@ Route::get('/test-permission', function() {
 // SPH Routes with Permission Middleware
 Route::view('sph', 'sph.index')->name('sph')->middleware('permission:sph.menu');
 Route::view('sph-create', 'sph.create')->name('sph_create')->middleware('permission:sph.menu');
+// Dynamic SPH form route: renders blade in resources/views/sph/form/{form}.blade.php
+Route::get('sph/form/{form}', function ($form) {
+    $view = 'sph.form.' . $form;
+    if (view()->exists($view)) {
+        return view($view);
+    }
+    return view('sph.form.not_found', ['form' => $form]);
+})->name('sph.form.dynamic')->middleware('permission:sph.menu');
 Route::view('approval-center', 'approval.index')->name('approval_center')->middleware('permission:approval.menu');
 Route::view('good-receipt', 'good_receipt.index')->name('good_receipt')->middleware('permission:sph.menu');
 Route::view('delivery-request', 'delivery_request.index')->name('delivery_request')->middleware('permission:log.menu');
 Route::view('delivery-note', 'delivery_note.index')->name('delivery_note')->middleware('permission:log.menu');
 Route::view('cetak-po', 'purchase_order.index')->name('cetak-po')->middleware('permission:fin.menu');
 Route::view('bayar-po', 'purchase_order.bayar')->name('bayar-po')->middleware('permission:fin.menu');
+Route::view('purchase-order', 'purchase_order.purchase_order')->name('purchase_order.index')->middleware('permission:fin.menu');
+Route::view('purchase-order/create-supplier', 'purchase_order.create_supplier')->name('purchase_order.create_supplier')->middleware('permission:fin.menu');
+Route::view('purchase-order/create-transportir', 'purchase_order.create_transportir')->name('purchase_order.create_transportir')->middleware('permission:fin.menu');
 Route::view('vendor-database', 'vendor.index')->name('vendor-database')->middleware('permission:master.vendor');
 Route::view('customer-database', 'customer.index')->name('customer-database')->middleware('permission:master.customer');
 Route::view('oat-configuration', 'oat_configuration.index')->name('oat-configuration')->middleware('permission:master.oat');

@@ -265,6 +265,9 @@
         let isEditMode = false;
 
         $(document).ready(function() {
+            // Set default filter Type to "All" (empty value)
+            $('#type-filter').val('');
+
             // Initialize DataTable
             initializeDataTable();
 
@@ -309,31 +312,30 @@
         function initializeDataTable() {
             customerTable = $('#customer-table').DataTable({
                 processing: true,
-                serverSide: true, // PENTING: Mengubah ini menjadi true
+                serverSide: true,
                 ajax: {
                     url: '/api/customer-database',
                     type: 'GET',
+                    error: function(xhr, error, thrown) {
+                        console.error('DataTables Ajax Error:', error, thrown);
+                        console.error('Response:', xhr.responseText);
+                    },
                     data: function(d) {
-                        const params = {
-                            draw: d.draw,
-                            start: d.start,
-                            length: d.length,
-                            // DataTables server-side will automatically send 'draw', 'start', 'length', and 'search' parameters.
-                            // We only need to add our custom filters.
-                        };
+                        const params = {};
 
-                        const searchValue = $('#company-search').val();
-                        if (searchValue && searchValue.trim() !== '') {
+                        // Calculate page number (DataTables uses 0-based start)
+                        params.page = Math.floor(d.start / d.length) + 1;
+                        params.per_page = d.length;
+
+                        // Get type filter value (default is "" for "All")
+                        const typeFilter = $('#type-filter').val() || '';
+                        params.type = typeFilter;
+
+                        // Get search value
+                        const searchValue = $('#company-search').val() || '';
+                        if (searchValue.trim() !== '') {
                             params.search = searchValue.trim();
                         }
-
-                        const typeFilter = $('#type-filter').val();
-                        if (typeFilter && typeFilter !== '') {
-                            params.type = typeFilter;
-                        }
-
-                        // Add a 'status' parameter
-                        params.status = 1; // Only active records
 
                         return params;
                     },
@@ -352,8 +354,14 @@
                             }
                             $('#total-customers').text(totalCustomers);
                         }
-                        // For server-side processing, DataTables expects an object with 'data', 'recordsTotal', and 'recordsFiltered'.
-                        // Make sure your API response returns these fields.
+                        
+                        // Map API response to DataTables expected format for server-side processing
+                        // DataTables expects: { data: [...], recordsTotal: number, recordsFiltered: number }
+                        if (json.pagination) {
+                            json.recordsTotal = json.pagination.total || 0;
+                            json.recordsFiltered = json.pagination.total || 0;
+                        }
+                        
                         return json.data || [];
                     }
                 },
@@ -361,8 +369,9 @@
                     {
                         data: null,
                         render: function (data, type, row, meta) {
-                            // This calculates the row number based on the current page and page length.
-                            return meta.row + meta.settings._iDisplayStart + 1;
+                            // Calculate row number based on current page and per_page
+                            const pageInfo = customerTable.page.info();
+                            return (pageInfo.page * pageInfo.length) + meta.row + 1;
                         },
                         orderable: false,
                         searchable: false

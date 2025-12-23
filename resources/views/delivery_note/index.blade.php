@@ -91,10 +91,6 @@
             <select class="form-select" id="dn_no" name="dn_no" style="width:100%;" required></select>
             <div class="invalid-feedback">Harus diisi</div>
           </div>
-          <div class="col-md-3 mb-2">
-            <label for="drs_no" class="form-label">DRS No</label>
-            <input type="text" class="form-control readonly-by-default" id="drs_no" name="drs_no" readonly>
-          </div>
           <div class="col-md-6 mb-2">
             <label for="customer_name" class="form-label">Customer Name</label>
             <input type="text" class="form-control readonly-by-default" id="customer_name" name="customer_name" readonly>
@@ -210,7 +206,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <input type="hidden" name="bast_drs_unique" id="bast_drs_unique">
+                    <input type="hidden" name="bast_id" id="bast_id">
                     {{-- PERBAIKAN: Input FOB dan Sent Via dijadikan hidden --}}
                     <input type="hidden" name="fob" id="fob">
                     <input type="hidden" name="sent_via" id="sent_via">
@@ -324,19 +320,19 @@ let pdfPreviewModal;
 let deliveryNoteMode = 'create'; // 'create' | 'edit' | 'view'
 let currentUser = ''; // Set this to current user if available from backend
 
-window.uploadBast = function(drs_unique) {
-    // 1. Cari data baris yang sesuai dari cache DataTable
-    let rowData = deliveryNoteTable.rows().data().toArray().find(r => r.drs_unique === drs_unique);
+window.uploadBast = function(id) {
+    // 1. Cari data baris yang sesuai dari cache DataTable berdasarkan id
+    let rowData = deliveryNoteTable.rows().data().toArray().find(r => r.id == id);
 
     if (!rowData) {
         showToast('Data untuk baris ini tidak ditemukan.', 'error');
         return;
     }
 
-    let vendorPo = rowData.vendor_po || drs_unique;
+    let vendorPo = rowData.vendor_po || rowData.dn_no || id;
 
     // 2. Isi semua input di modal BAST
-    $('#bast_drs_unique').val(drs_unique);
+    $('#bast_id').val(id);
 
     // PERBAIKAN: Isi nilai fob dan sent_via saat modal dibuka
     $('#fob').val(rowData.fob || '');
@@ -344,7 +340,7 @@ window.uploadBast = function(drs_unique) {
     $('#sent_via').val(rowData.shipped_via || '');
 
     // 3. Atur judul modal
-    $('#modalUploadBastLabel').text(`Upload BAST untuk Vendor PO: ${vendorPo}`);
+    $('#modalUploadBastLabel').text(`Upload BAST untuk ${rowData.dn_no || vendorPo}`);
 
     // 4. Tampilkan modal
     bastUploadModal.show();
@@ -361,9 +357,16 @@ window.viewBast = function(drs_unique) {
 
 // Function to open PDF preview modal
 function openPdfModal(pdfUrl, title) {
-    // Construct full URL with public path
-    const baseUrl = 'https://is3.cloudhost.id/bensinkustorage/';
-    const fullPdfUrl = baseUrl + pdfUrl;
+    // Check if pdfUrl already contains full URL (starts with http:// or https://)
+    let fullPdfUrl;
+    if (pdfUrl && (pdfUrl.startsWith('http://') || pdfUrl.startsWith('https://'))) {
+        // Already a full URL, use as is
+        fullPdfUrl = pdfUrl;
+    } else {
+        // Construct full URL with public path
+        const baseUrl = 'https://is3.cloudhost.id/bensinkustorage/';
+        fullPdfUrl = baseUrl + (pdfUrl || '');
+    }
 
     $('#modalPdfPreviewLabel').text(title);
     $('#pdf-iframe').attr('src', fullPdfUrl);
@@ -428,7 +431,7 @@ $(document).ready(function() {
 
             let badgeHtml = '';
             if (row.status == 0) {
-              badgeHtml = `<span class="badge bg-info text-white mt-1" style="cursor:pointer;display:inline-block;" onclick="window.uploadBast('${row.drs_unique}')">Upload BAST</span>`;
+              badgeHtml = `<span class="badge bg-info text-white mt-1" style="cursor:pointer;display:inline-block;" onclick="window.uploadBast(${row.id})">Upload BAST</span>`;
             } else {
               badgeHtml = `<span class="badge bg-success mt-1" style="cursor:default;display:inline-block;opacity:0.7;">BAST Terlampir</span>`;
             }
@@ -512,18 +515,37 @@ $(document).ready(function() {
   }).on('select2:select', function(e){
     let dn = e.params.data.data;
     // Autofill fields
-    $('#drs_no').val(dn.drs_no || '');
     $('#drs_unique').val(dn.drs_unique || '');
     $('#customer_po').val(dn.customer_po || '');
     $('#customer_name').val(dn.customer_name || '');
     $('#po_date').val(dn.po_date || '');
 
-
-    if (dn.arrival_date) {
-        $('#arrival_date').val(dn.arrival_date);
+    // Fix Arrival Date - pastikan format valid dan datepicker sudah di-initialize
+    if (dn.arrival_date && dn.arrival_date !== 'NaN-NaN-NaN') {
+        // Pastikan format YYYY-MM-DD
+        let arrivalDate = dn.arrival_date;
+        if (arrivalDate.includes('T')) {
+            arrivalDate = arrivalDate.split('T')[0];
+        }
+        $('#arrival_date').val(arrivalDate);
+        // Re-initialize datepicker jika belum ada
+        if (!$('#arrival_date').data('datepicker')) {
+            $('#arrival_date').datepicker({
+                language: 'en',
+                dateFormat: 'yyyy-mm-dd',
+                autoClose: true
+            });
+        }
         var datepicker = $('#arrival_date').datepicker().data('datepicker');
         if(datepicker) {
-            datepicker.selectDate(new Date(dn.arrival_date + 'T00:00:00'));
+            try {
+                let dateObj = new Date(arrivalDate);
+                if (!isNaN(dateObj.getTime())) {
+                    datepicker.selectDate(dateObj);
+                }
+            } catch(e) {
+                console.error('Error setting arrival date:', e);
+            }
         }
     } else {
         $('#arrival_date').val('');
@@ -534,12 +556,12 @@ $(document).ready(function() {
     }
 
     $('#delivery_to').val(dn.delivery_to || '');
-    $('#address').val(dn.delivery_to || '');
+    $('#address').val(dn.alamat || '');
     $('#qty').val(dn.qty || '');
     $('#description').val(dn.description || '');
     $('#transportir').val(dn.transportir || '');
   }).on('select2:clear', function(e){
-    $('#drs_no,#drs_unique,#customer_po,#customer_name,#po_date,#delivery_to,#address,#qty,#description,#transportir').val('');
+    $('#drs_unique,#customer_po,#customer_name,#po_date,#delivery_to,#address,#qty,#description,#transportir').val('');
     $('#arrival_date').val('');
     var datepicker = $('#arrival_date').datepicker().data('datepicker');
     if(datepicker) {
@@ -660,8 +682,8 @@ $(document).ready(function() {
     const bastDate = $('#bast_date').val();
 
     // Pastikan hidden fields FOB dan SENT_VIA terisi dari data Delivery Note
-    const drs_unique = $('#bast_drs_unique').val();
-    const rowData = deliveryNoteTable.rows().data().toArray().find(r => r.drs_unique === drs_unique);
+    const bastId = $('#bast_id').val();
+    const rowData = deliveryNoteTable.rows().data().toArray().find(r => r.id == bastId);
     if (rowData) {
       $('#fob').val(rowData.fob || '');
       $('#sent_via').val(rowData.shipped_via || '');
@@ -774,7 +796,6 @@ $(document).ready(function() {
         var newOption = new Option(row.dn_no, row.dn_no, true, true);
         $('#dn_no').append(newOption).trigger('change');
     }
-    $('#drs_no').val(row.drs_no||'');
     $('#drs_unique').val(row.drs_unique||'');
     $('#customer_po').val(row.customer_po||'');
     $('#customer_name').val(row.customer_name||'');
@@ -811,6 +832,11 @@ $(document).ready(function() {
     $('#btn-save-delivery-note').prop('disabled', true);
 
     let data = $(this).serializeArray();
+
+    // Filter out drs_no dari payload
+    data = data.filter(function(d) {
+        return d.name !== 'drs_no';
+    });
 
     // FORCE include hidden status value (overwrite if double)
     let statusVal = $('#status').val();
@@ -870,6 +896,15 @@ $(document).ready(function() {
   });
   $('#modal-delivery-note').on('shown.bs.modal', function(){
     showDnOverlayLoading(false);
+    // Re-initialize datepicker untuk arrival_date saat modal dibuka
+    if ($('#arrival_date').data('datepicker')) {
+        $('#arrival_date').datepicker('destroy');
+    }
+    $('#arrival_date').datepicker({
+        language: 'en',
+        dateFormat: 'yyyy-mm-dd',
+        autoClose: true
+    });
   });
 });
 </script>

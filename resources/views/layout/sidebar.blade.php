@@ -64,6 +64,9 @@ use App\Helpers\PermissionHelper;
                 @if(PermissionHelper::hasSubMenuAccess('fin.menu', 'fin.ap.menu'))
                 <li><a href="{{route('bayar-po')}}">Account Payable</a></li>
                 @endif
+                @if(PermissionHelper::hasSubMenuAccess('fin.menu', 'fin.po.menu'))
+                <li><a href="{{route('purchase_order.index')}}">Purchase Order</a></li>
+                @endif
               </ul>
             </li>
             @endif
