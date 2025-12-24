@@ -345,23 +345,30 @@ function submitInvoiceApproval(invoiceId) {
                 text: 'Approval berhasil disubmit',
             }).then(() => {
                 $('#invoiceApprovalModal').modal('hide');
-                // Reload the invoice table
-                if (typeof invoiceTable !== 'undefined') {
-                    invoiceTable.ajax.reload();
+                // Reload all tables including invoice table by calling fetchSph
+                if (typeof window.fetchSph === 'function') {
+                    window.fetchSph();
+                } else {
+                    // Fallback: manually reload invoice table and summary cards
+                    $.get('/api/approval/details')
+                        .done(function(res) {
+                            if (res.data) {
+                                // Update summary cards
+                                $('#card-total_sph').text(res.data.sph.count || 0);
+                                $('#card-waiting').text(res.data.supplier.count || 0);
+                                $('#card-revisi').text(res.data.transporter.count || 0);
+                                $('#card-invoice').text(res.data.invoice.count || 0);
+                                
+                                // Reload invoice table if it exists
+                                if (typeof invoiceTable !== 'undefined' && invoiceTable) {
+                                    invoiceTable.clear().rows.add(res.data.invoice.items || []).draw();
+                                }
+                            }
+                        })
+                        .fail(function() {
+                            console.log('Failed to reload data');
+                        });
                 }
-                // Reload summary cards by calling the API
-                $.get('/api/approval/details')
-                    .done(function(res) {
-                        if (res.data) {
-                            $('#card-total_sph').text(res.data.sph.count || 0);
-                            $('#card-waiting').text(res.data.supplier.count || 0);
-                            $('#card-revisi').text(res.data.transporter.count || 0);
-                            $('#card-invoice').text(res.data.invoice.count || 0);
-                        }
-                    })
-                    .fail(function() {
-                        console.log('Failed to reload summary cards');
-                    });
             });
         },
         error: function(xhr) {

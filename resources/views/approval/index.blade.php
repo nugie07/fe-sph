@@ -635,8 +635,8 @@
             }]
           });
 
-      // 2) Fetch & render SPH data
-      function fetchSph(){
+      // 2) Fetch & render SPH data (make it global so it can be called from invoice modal)
+      window.fetchSph = function(){
         table.clear().draw();
         $('#basic-1 tbody').html(
           '<tr><td colspan="11" class="text-center py-4">'+
@@ -691,8 +691,8 @@
               if (typeof supplierTable !== 'undefined') {
                 supplierTable.clear().rows.add(res.data.supplier.items || []).draw();
               }
-              if (typeof invoiceTable !== 'undefined') {
-                invoiceTable.clear().rows.add(res.data.invoice.items || []).draw();
+              if (typeof window.invoiceTable !== 'undefined' && window.invoiceTable) {
+                window.invoiceTable.clear().rows.add(res.data.invoice.items || []).draw();
               }
             } catch (e) { console.warn('Failed hydrating additional tables', e); }
           })
@@ -1281,7 +1281,7 @@
       if ($.fn.DataTable.isDataTable('#invoice-table')) {
         $('#invoice-table').DataTable().clear().destroy();
       }
-      var invoiceTable = $('#invoice-table').DataTable({
+      window.invoiceTable = $('#invoice-table').DataTable({
           processing: true,
           data: [],
           columns: [
@@ -1333,6 +1333,8 @@
               if (window.feather) feather.replace();
           }
       });
+      // Create local alias for backward compatibility
+      var invoiceTable = window.invoiceTable;
 
       // On invoice tab show, just redraw
       $('a[data-bs-toggle="tab"][href="#tab-invoice"]').on('shown.bs.tab', function() {

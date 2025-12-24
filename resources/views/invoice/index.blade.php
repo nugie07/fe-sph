@@ -132,9 +132,13 @@
               </button>
               <select class="form-select" id="filter-status" style="width:200px;max-width:220px;">
                 <option value="">Semua Status</option>
-                <option value="0">Draft</option>
-                <option value="1">Belum Dibayar</option>
-                <option value="2">Sudah Dibayar</option>
+                <option value="0">Belum Dibayar</option>
+                <option value="1">Sudah Dibayar</option>
+              </select>
+              <select class="form-select" id="filter-type" style="width:200px;max-width:220px;">
+                <option value="">Semua Tipe</option>
+                <option value="1">Invoices</option>
+                <option value="2">Proforma</option>
               </select>
             </div>
           </div>
@@ -144,6 +148,7 @@
                 <thead>
                   <tr>
                     <th>No</th>
+                    <th>Tipe</th>
                     <th>Invoice No</th>
                     <th>Customer PO</th>
                     <th>Nama Customer</th>
@@ -308,6 +313,29 @@
         </div>
     </div>
 </div>
+
+<!-- MODAL VIEW INVOICE PDF -->
+<div class="modal fade" id="viewInvoiceModal" tabindex="-1" aria-labelledby="viewInvoiceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewInvoiceModalLabel">Invoice</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="d-flex justify-content-center align-items-center" style="height: 80vh;">
+                    <iframe id="invoiceIframe" src="" style="width: 100%; height: 100%; border: none;"></iframe>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 8px; padding: 8px 20px;">Tutup</button>
+                <button type="button" class="btn btn-primary" id="btn-download-invoice" onclick="downloadInvoiceFile()" style="border-radius: 8px; padding: 8px 20px;">
+                    <i class="fa fa-download"></i> Download
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @section('scripts')
@@ -327,6 +355,14 @@ function editInvoice(invoiceId) {
     // Redirect ke halaman view dengan state=revisi
     window.location.href = '/invoice/view?id=' + invoiceId + '&state=revisi';
 }
+
+// Global variables for receipt handling
+let currentReceiptUrl = '';
+let currentReceiptTitle = '';
+
+// Global variables for invoice file handling
+let currentInvoiceUrl = '';
+let currentInvoiceTitle = '';
 
 $(document).ready(function() {
     let invoiceTable;
@@ -361,25 +397,54 @@ $(document).ready(function() {
             url: '/api/finance/invoices',
             data: d => {
                 d.status = $('#filter-status').val();
+                d.type = $('#filter-type').val();
             },
             dataSrc: 'data'
         },
         columns: [
             { data: null, render: (d,t,r,i) => i.row + 1 },
+            {
+                data: 'type',
+                render: function(data, type, row) {
+                    if (data == 1) {
+                        return '<span class="badge" style="background-color: #155724; color: #fff; padding: 6px 12px; border-radius: 4px;">Invoice</span>';
+                    } else if (data == 2) {
+                        return '<span class="badge" style="background-color: #004085; color: #fff; padding: 6px 12px; border-radius: 4px;">Proforma</span>';
+                    }
+                    return '<span class="badge bg-secondary">-</span>';
+                }
+            },
             { data: 'invoice_no', defaultContent: '-' },
             { data: 'po_no', defaultContent: '-' },
             { data: 'bill_to', defaultContent: '-' },
             { data: 'total', render: data => formatRupiah(data) },
             {
-                data: 'status',
-                render: function(data) {
-                    if (data == 0) return '<span class="badge bg-secondary">Draft</span>';
-                    if (data == 1) return '<span class="badge bg-info">Menunggu Approval</span>';
-                    if (data == 2) return '<span class="badge bg-warning">Revisi</span>';
-                    if (data == 4) return '<span class="badge bg-primary">Approved</span>';
-                    if (data == 5) return '<span class="badge bg-danger">Belum Dibayar</span>';
-                    if (data == 6) return '<span class="badge bg-success">Paid</span>';
-                    return '<span class="badge bg-light text-dark">Unknown</span>';
+                data: null,
+                render: function(data, type, row) {
+                    let statusBadge = '';
+                    if (row.status == 0) {
+                        statusBadge = '<span class="badge bg-secondary">Draft</span>';
+                    } else if (row.status == 1) {
+                        statusBadge = '<span class="badge bg-info">Menunggu Approval</span>';
+                    } else if (row.status == 2) {
+                        statusBadge = '<span class="badge bg-warning">Revisi</span>';
+                    } else if (row.status == 4) {
+                        statusBadge = '<span class="badge bg-primary">Approved</span>';
+                        // Tambahkan tombol "Lihat Invoice" jika file tersedia
+                        if (row.file && row.file !== null && row.file !== '') {
+                            // Escape HTML untuk file path
+                            const escapedFile = String(row.file).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+                            const escapedInvoiceNo = String(row.invoice_no || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+                            statusBadge += ' <span class="badge bg-danger btn-view-invoice-pdf" style="cursor:pointer; margin-left:5px;" data-file="' + escapedFile + '" data-invoice-no="' + escapedInvoiceNo + '" title="Lihat Invoice">Lihat Invoice</span>';
+                        }
+                    } else if (row.status == 5) {
+                        statusBadge = '<span class="badge bg-danger">Belum Dibayar</span>';
+                    } else if (row.status == 6) {
+                        statusBadge = '<span class="badge bg-success">Paid</span>';
+                    } else {
+                        statusBadge = '<span class="badge bg-light text-dark">Unknown</span>';
+                    }
+                    return statusBadge;
                 }
             },
             {
@@ -426,6 +491,7 @@ $(document).ready(function() {
     });
 
     $('#filter-status').on('change', reloadTable);
+    $('#filter-type').on('change', reloadTable);
     loadSummaryData();
 
     // Fungsi untuk membuka modal detail
@@ -555,10 +621,6 @@ $(document).ready(function() {
             }
         });
     });
-
-    // Global variables for receipt handling
-    let currentReceiptUrl = '';
-    let currentReceiptTitle = '';
 
     // Event handler untuk upload bukti pembayaran
     $('#basic-1 tbody').on('click', '.btn-upload-receipt', function() {
@@ -725,6 +787,41 @@ $(document).ready(function() {
         currentReceiptUrl = '';
         currentReceiptTitle = '';
     });
+
+    // Event handler untuk view invoice PDF
+    $('#basic-1 tbody').on('click', '.btn-view-invoice-pdf', function() {
+        const invoiceFile = $(this).data('file');
+        const invoiceNo = $(this).data('invoice-no');
+
+        if (!invoiceFile || invoiceFile === '' || invoiceFile === null) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'File invoice tidak tersedia'
+            });
+            return;
+        }
+
+        // Set current invoice data
+        currentInvoiceUrl = invoiceFile;
+        currentInvoiceTitle = invoiceNo || 'Invoice';
+
+        // Set modal title
+        $('#viewInvoiceModalLabel').text(`Invoice - ${currentInvoiceTitle}`);
+
+        // Set iframe source
+        $('#invoiceIframe').attr('src', invoiceFile);
+
+        // Show modal
+        $('#viewInvoiceModal').modal('show');
+    });
+
+    // Handle invoice modal events
+    $('#viewInvoiceModal').on('hidden.bs.modal', function() {
+        $('#invoiceIframe').attr('src', '');
+        currentInvoiceUrl = '';
+        currentInvoiceTitle = '';
+    });
 });
 
 // Global function to download receipt
@@ -743,6 +840,26 @@ function downloadReceiptFile() {
             icon: 'error',
             title: 'Error',
             text: 'URL bukti pembayaran tidak tersedia'
+        });
+    }
+}
+
+// Global function to download invoice
+function downloadInvoiceFile() {
+    if (currentInvoiceUrl) {
+        // Create a temporary link to download the invoice
+        const link = document.createElement('a');
+        link.href = currentInvoiceUrl;
+        link.download = `Invoice_${currentInvoiceTitle}_${Date.now()}.pdf`;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    } else {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'URL invoice tidak tersedia'
         });
     }
 }

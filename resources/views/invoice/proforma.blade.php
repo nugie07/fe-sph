@@ -186,9 +186,17 @@
                                         <span>PBBKB (7,5%):</span>
                                         <span id="pbbkb">0</span>
                                     </div>
-                                    <div class="d-flex justify-content-between">
+                                    <div class="d-flex justify-content-between align-items-center">
                                         <span>PPH 23 (2%):</span>
-                                        <span id="pph23">0</span>
+                                        <input type="text" class="form-control" name="pph23" id="pph23" value="0,00" style="width: 150px; text-align: right;">
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span>OAT:</span>
+                                        <input type="text" class="form-control" name="oat" id="oat" value="0" style="width: 150px; text-align: right;">
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span>Transport:</span>
+                                        <input type="text" class="form-control" name="transport" id="transport" value="0" style="width: 150px; text-align: right;">
                                     </div>
                                     <hr>
                                     <div class="d-flex justify-content-between fw-bold fs-5">
@@ -200,12 +208,6 @@
                                         <span id="terbilang" class="fst-italic"></span>
                                     </div>
                                 </div>
-                            </div>
-
-                            <!-- Terbilang -->
-                            <div class="col-12">
-                                <label class="form-label">Terbilang:</label>
-                                <div class="form-control-plaintext" id="terbilang">Nol rupiah</div>
                             </div>
 
                             <!-- Description -->
@@ -254,6 +256,23 @@ $(document).ready(function() {
         return new Intl.NumberFormat('id-ID', { style: 'decimal', minimumFractionDigits: 0 }).format(angka || 0);
     }
 
+    // Function to parse rupiah format to number (remove dots and commas)
+    function parseRupiah(rupiahString) {
+        if (!rupiahString) return 0;
+        // Remove all non-digit characters except decimal point
+        let cleaned = rupiahString.toString().replace(/[^\d,]/g, '').replace(',', '.');
+        return parseFloat(cleaned) || 0;
+    }
+
+    // Function to format rupiah without decimal places for input fields (PPH 23, OAT, Transport)
+    function formatRupiahInput(angka) {
+        return new Intl.NumberFormat('id-ID', { 
+            style: 'decimal', 
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(angka || 0);
+    }
+
     // Helper function untuk terbilang
     function terbilang(n) {
         var angka = ["","satu","dua","tiga","empat","lima","enam","tujuh","delapan","sembilan","sepuluh","sebelas"];
@@ -272,9 +291,11 @@ $(document).ready(function() {
     // Initialize Select2 for Customer PO
     $('#po_no').select2({
         theme: 'bootstrap-5',
+        width: '100%',
         placeholder: 'Pilih Customer PO',
+        allowClear: true,
         ajax: {
-            url: '/api/delivery-request/po-list',
+            url: '/api/list/purchase-order/supplier/approve',
             dataType: 'json',
             delay: 250,
             data: function(params) {
@@ -283,12 +304,12 @@ $(document).ready(function() {
                     page: params.page || 1
                 };
             },
-                        processResults: function(data, params) {
+            processResults: function(data, params) {
                 params.page = params.page || 1;
-                console.log('PO list API response:', data); // Debug log
+                console.log('Customer PO API Response:', data);
 
-                // Handle different response formats
-                let results = [];
+                // Handle response structure: { success: true, data: [...] } or direct array
+                var results = [];
                 if (Array.isArray(data)) {
                     results = data;
                 } else if (data && data.data && Array.isArray(data.data)) {
@@ -296,21 +317,35 @@ $(document).ready(function() {
                 } else if (data && Array.isArray(data)) {
                     results = data;
                 }
-
-                // Ensure each result has proper structure for Select2
-                results = results.map(function(item) {
+                
+                console.log('Processed results:', results);
+                
+                // Map response to Select2 format
+                var mappedResults = results.map(function(item) {
+                    var customerPo = item.customer_po || item.po_no || item.text || item.name || '';
+                    var itemId = item.customer_po || item.po_no || item.id || customerPo;
+                    
+                    // Try various possible field names for customer name
+                    var namaCustomer = item.nama_customer || 
+                                     item.nama || 
+                                     item.name || 
+                                     item.customer_name || 
+                                     item.customer || 
+                                     '';
+                    
                     return {
-                        id: item.po_no || item.id, // Use po_no as the ID
-                        text: item.po_no || item.text,
-                        po_no: item.po_no,
-                        ...item // Include all original properties
+                        id: itemId,
+                        text: customerPo,
+                        // Store full item data for later use (all properties from original item)
+                        originalData: item,
+                        nama_customer: namaCustomer
                     };
                 });
 
-                console.log('Processed PO results:', results); // Debug log
+                console.log('Mapped results:', mappedResults);
 
                 return {
-                    results: results,
+                    results: mappedResults,
                     pagination: {
                         more: false
                     }
@@ -320,78 +355,81 @@ $(document).ready(function() {
         },
         templateResult: function(data) {
             if (data.loading) return data.text;
-            console.log('PO template result data:', data); // Debug log
-            return data.po_no || data.text || data.id;
+            return data.text;
         },
         templateSelection: function(data) {
-            console.log('PO template selection data:', data); // Debug log
-            return data.po_no || data.text || data.id;
-        },
-        // Ensure we store the full object, not just the ID
-        escapeMarkup: function(markup) { return markup; }
-            }).on('select2:select', function(e) {
-        console.log('Select2 select event triggered'); // Debug log
-        console.log('Selected data:', e.params.data); // Debug log
-
-        // Make sure we get the actual po_no, not the id
-        const selectedPo = e.params.data.po_no || e.params.data.text || e.params.data.id;
-        console.log('Selected PO:', selectedPo); // Debug log
-        console.log('Full selected data:', e.params.data); // Debug log
-
-        // Debug: Show what would be sent to API
-        console.log('Will send to API - po_no:', selectedPo); // Debug log
-
-        if (selectedPo) {
-            // Call new API to get customer details by PO
-            $.ajax({
-                url: '/api/finance/get-customer-by-po',
-                method: 'POST',
-                dataType: 'json',
-                data: {
-                    po_no: selectedPo,
-                    _token: '{{ csrf_token() }}'
-                },
-                success: function(response) {
-                    console.log('Customer by PO response:', response); // Debug log
-
-                    if (response && response.success && response.data) {
-                        $('#bill_to').val(response.data.bill_to || '');
-                        $('#ship_to').val(response.data.ship_to || '');
-                        console.log('Bill To set to:', response.data.bill_to); // Debug log
-                        console.log('Ship To set to:', response.data.ship_to); // Debug log
-                    } else {
-                        console.log('No customer data found in response'); // Debug log
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.error('Failed to fetch customer details:', error); // Debug log
-                    console.error('Response:', xhr.responseText); // Debug log
-
-                    // Fallback to old API if new API fails
-                    $.ajax({
-                        url: `/api/finance/invoices/${selectedPo}`,
-                        method: 'GET',
-                        dataType: 'json',
-                        success: function(fallbackResponse) {
-                            console.log('Fallback API response:', fallbackResponse); // Debug log
-                            if (fallbackResponse && fallbackResponse.data) {
-                                $('#bill_to').val(fallbackResponse.data.bill_to || '');
-                                $('#ship_to').val(fallbackResponse.data.ship_to || '');
-                            }
-                        },
-                        error: function(fallbackXhr, fallbackStatus, fallbackError) {
-                            console.error('Fallback API also failed:', fallbackError); // Debug log
-                        }
-                    });
-                }
-            });
+            return data.text;
         }
     });
+
+    // Function to fetch customer data and fill Bill To & Ship To
+    function fetchCustomerData(name) {
+        if (!name) {
+            console.log('No customer name provided');
+            return;
+        }
+        
+        console.log('Fetching customer data for:', name);
+        
+        $.ajax({
+            url: '/api/finance/generate-cust-data',
+            method: 'GET',
+            data: {
+                name: name
+            },
+            success: function(response) {
+                console.log('Customer Data API Response:', response);
+                
+                // Extract bill_to, ship_to, and addresses from response
+                var customerData = response.data || response;
+                if (customerData) {
+                    // Handle Bill To - use bill_to if available, otherwise use name only
+                    var billToText = '';
+                    if (customerData.bill_to && customerData.bill_to !== null && customerData.bill_to !== '') {
+                        billToText = customerData.bill_to;
+                    } else if (customerData.name) {
+                        billToText = customerData.name;
+                    }
+                    
+                    if (billToText) {
+                        $('#bill_to').val(billToText);
+                        console.log('Bill To filled:', billToText);
+                    } else {
+                        console.log('No bill_to or name available');
+                    }
+                    
+                    // Handle Ship To - use ship_to if available, otherwise use name only
+                    var shipToText = '';
+                    if (customerData.ship_to && customerData.ship_to !== null && customerData.ship_to !== '') {
+                        shipToText = customerData.ship_to;
+                    } else if (customerData.name) {
+                        shipToText = customerData.name;
+                    }
+                    
+                    if (shipToText) {
+                        $('#ship_to').val(shipToText);
+                        console.log('Ship To filled:', shipToText);
+                    } else {
+                        console.log('No ship_to or name available');
+                    }
+                } else {
+                    console.log('No customer data in response');
+                }
+            },
+            error: function(xhr) {
+                console.error('Error loading customer data:', xhr);
+                console.error('Status:', xhr.status);
+                console.error('Response:', xhr.responseJSON || xhr.responseText);
+            }
+        });
+    }
 
         // Initialize Select2 for Payment Method
     $('#payment_method').select2({
         theme: 'bootstrap-5',
+        width: '100%',
         placeholder: 'Pilih Metode Pembayaran',
+        allowClear: true,
         ajax: {
             url: '/api/master-lov/children',
             dataType: 'json',
@@ -441,51 +479,150 @@ $(document).ready(function() {
         console.log('Payment method selected:', e.params.data); // Debug log
     });
 
-        // When Customer PO is selected, populate bill_to and ship_to
+    // Handle Customer PO change - auto-fill Bill To, Ship To, and Detail Items
     $('#po_no').on('change', function() {
-        const selectedPo = $(this).val();
-        const selectedData = $(this).select2('data');
-        console.log('PO changed:', selectedPo); // Debug log
-        console.log('Selected data (change):', selectedData); // Debug log
-
-        // Try to get the actual po_no from selected data
-        let actualPoNo = selectedPo;
-        if (selectedData && selectedData.length > 0) {
-            actualPoNo = selectedData[0].po_no || selectedData[0].text || selectedPo;
-        }
-        console.log('Actual PO No:', actualPoNo); // Debug log
-
-        if (selectedPo) {
-            // Call new API to get customer details by PO
+        const customerPo = $(this).val();
+        const selectedData = $(this).select2('data')[0];
+        
+        if (customerPo) {
+            // First, try to get nama_customer from selected data
+            let namaCustomer = '';
+            if (selectedData) {
+                namaCustomer = selectedData.nama_customer || 
+                              (selectedData.originalData && selectedData.originalData.nama_customer) ||
+                              '';
+            }
+            
+            console.log('Selected Customer PO:', customerPo);
+            console.log('Nama Customer from selected data:', namaCustomer);
+            console.log('Selected Data:', selectedData);
+            
+            // If nama_customer is not in selected data, fetch it from API
+            if (!namaCustomer) {
+                $.ajax({
+                    url: '/api/list/purchase-order/supplier/approve',
+                    method: 'GET',
+                    data: {
+                        search: customerPo
+                    },
+                    success: function(response) {
+                        console.log('Customer PO Detail API Response:', response);
+                        
+                        var results = [];
+                        if (Array.isArray(response)) {
+                            results = response;
+                        } else if (response && response.data && Array.isArray(response.data)) {
+                            results = response.data;
+                        }
+                        
+                        // Find matching Customer PO
+                        var matchedPo = results.find(function(item) {
+                            return (item.customer_po || item.po_no) === customerPo;
+                        });
+                        
+                        console.log('Matched PO:', matchedPo);
+                        
+                        if (matchedPo) {
+                            // Try various possible field names for customer name
+                            namaCustomer = matchedPo.nama_customer || 
+                                         matchedPo.nama || 
+                                         matchedPo.name || 
+                                         matchedPo.customer_name || 
+                                         matchedPo.customer || 
+                                         '';
+                            
+                            console.log('Nama Customer from API:', namaCustomer);
+                            console.log('All matched PO fields:', Object.keys(matchedPo));
+                            
+                            // Now fetch Bill To and Ship To
+                            if (namaCustomer) {
+                                fetchCustomerData(namaCustomer);
+                            } else {
+                                console.warn('No customer name found in Customer PO data');
+                            }
+                        } else {
+                            console.warn('Customer PO not found in API response');
+                        }
+                    },
+                    error: function(xhr) {
+                        console.error('Error fetching Customer PO detail:', xhr);
+                    }
+                });
+            } else {
+                // nama_customer is available, fetch Bill To and Ship To directly
+                fetchCustomerData(namaCustomer);
+            }
+            
+            // Fetch PO Customer data to populate datatable and transport
             $.ajax({
-                url: '/api/finance/get-customer-by-po',
-                method: 'POST',
-                dataType: 'json',
+                url: '/api/finance/generate-po-customer',
+                method: 'GET',
                 data: {
-                    po_no: actualPoNo,
-                    _token: '{{ csrf_token() }}'
+                    po_no: customerPo
                 },
                 success: function(response) {
-                    console.log('Customer by PO response (change):', response); // Debug log
-
+                    console.log('PO Customer API Response:', response);
+                    
                     if (response && response.success && response.data) {
-                        $('#bill_to').val(response.data.bill_to || '');
-                        $('#ship_to').val(response.data.ship_to || '');
-                        console.log('Bill To set to:', response.data.bill_to); // Debug log
-                        console.log('Ship To set to:', response.data.ship_to); // Debug log
-                    } else {
-                        console.log('No customer data found in response'); // Debug log
+                        const poData = response.data;
+                        
+                        // Populate transport from good_receipt.transport
+                        if (poData.good_receipt && poData.good_receipt.transport) {
+                            const transportValue = poData.good_receipt.transport;
+                            $('#transport').val(formatRupiahInput(transportValue));
+                            console.log('Transport filled:', transportValue);
+                            calculateGrandTotal();
+                        }
+                        
+                        // Populate datatable from details array
+                        if (poData.details && Array.isArray(poData.details) && poData.details.length > 0) {
+                            // Clear existing rows first
+                            $('#invoice-items-table tbody').empty();
+                            
+                            // Add rows from details
+                            poData.details.forEach(function(detail) {
+                                const namaItem = detail.nama_item || '';
+                                const qty = detail.qty || 0;
+                                const harga = detail.per_item || 0;
+                                const total = qty * harga;
+                                
+                                const newRow = `
+                                    <tr>
+                                        <td class="item-no text-center align-middle"></td>
+                                        <td><input type="text" name="details[][nama_item]" class="form-control" required value="${namaItem}"></td>
+                                        <td><input type="number" name="details[][qty]" class="form-control item-qty" value="${qty}" min="1" required></td>
+                                        <td><input type="number" name="details[][harga]" class="form-control item-price" value="${harga}" min="0" required></td>
+                                        <td class="row-total text-end align-middle">${formatRupiah(total)}</td>
+                                        <td class="text-center align-middle"><button type="button" class="btn btn-delete-item">×</button></td>
+                                    </tr>
+                                `;
+                                $('#invoice-items-table tbody').append(newRow);
+                            });
+                            
+                            // Refresh table numbering
+                            refreshTableNo();
+                            
+                            // Recalculate totals
+                            calculateGrandTotal();
+                            
+                            console.log('Datatable populated with', poData.details.length, 'items');
+                        }
                     }
                 },
-                error: function(xhr, status, error) {
-                    console.error('Failed to fetch customer details (change):', error); // Debug log
-                    console.error('Response:', xhr.responseText); // Debug log
+                error: function(xhr) {
+                    console.error('Error fetching PO Customer data:', xhr);
+                    // Don't show error to user, just log it
                 }
             });
         } else {
+            // Clear Bill To and Ship To if Customer PO is cleared
             $('#bill_to').val('');
             $('#ship_to').val('');
-            console.log('PO cleared, fields reset'); // Debug log
+            // Clear datatable and transport
+            $('#invoice-items-table tbody').empty();
+            $('#transport').val(formatRupiahInput(0));
+            // Recalculate totals
+            calculateGrandTotal();
         }
     });
 
@@ -506,13 +643,28 @@ $(document).ready(function() {
         });
         let tax = subtotal * 0.11;
         let pbbkb = subtotal * 0.075;
-        let pph23 = subtotal * 0.02;
-        let grandTotal = subtotal + tax + pbbkb + pph23;
+        // PPH 23 auto-calculate (2% of subtotal), but field is editable
+        let pph23Auto = subtotal * 0.02;
+        let pph23 = 0;
+        
+        // Only auto-update PPH 23 if it hasn't been manually edited
+        if (!pph23ManuallyEdited) {
+            // Use auto-calculated value
+            pph23 = pph23Auto;
+            $('#pph23').val(formatRupiahInput(pph23Auto));
+        } else {
+            // Use manually edited value (parse from rupiah format)
+            pph23 = parseRupiah($('#pph23').val());
+        }
+        
+        // OAT and Transport are manual input fields (parse from rupiah format)
+        let oat = parseRupiah($('#oat').val()) || 0;
+        let transport = parseRupiah($('#transport').val()) || 0;
+        let grandTotal = subtotal + tax + pbbkb + pph23 + oat + transport;
 
         $('#subtotal').text(formatRupiah(subtotal));
         $('#tax').text(formatRupiah(tax));
         $('#pbbkb').text(formatRupiah(pbbkb));
-        $('#pph23').text(formatRupiah(pph23));
         $('#grand-total').text(formatRupiah(grandTotal));
 
         // Terbilang
@@ -564,6 +716,52 @@ $(document).ready(function() {
         calculateRowTotal($(this).closest('tr'));
     });
 
+    // Flag to track if PPH 23 has been manually edited
+    let pph23ManuallyEdited = false;
+
+    // Event handler for PPH 23 - parse on focus (remove format for editing)
+    $('#pph23').on('focus', function() {
+        let value = parseRupiah($(this).val());
+        $(this).val(value.toString().replace('.', ','));
+    });
+
+    // Event handler for PPH 23 - mark as manually edited and recalculate
+    $('#pph23').on('input', function() {
+        let value = $(this).val();
+        // If field is cleared, reset to auto-calculate
+        if (value === '' || value === '0' || value === '0,00' || parseRupiah(value) === 0) {
+            pph23ManuallyEdited = false;
+        } else {
+            pph23ManuallyEdited = true;
+        }
+        calculateGrandTotal();
+    });
+
+    // Format PPH 23 on blur (format with rupiah)
+    $('#pph23').on('blur', function() {
+        let value = parseRupiah($(this).val());
+        $(this).val(formatRupiahInput(value));
+        calculateGrandTotal();
+    });
+
+    // Event handler for OAT and Transport - parse on focus (remove format for editing)
+    $('#oat, #transport').on('focus', function() {
+        let value = parseRupiah($(this).val());
+        $(this).val(value.toString().replace('.', ','));
+    });
+
+    // Event handler for OAT and Transport to recalculate total
+    $('#oat, #transport').on('input change', function() {
+        calculateGrandTotal();
+    });
+
+    // Format OAT and Transport on blur (format with rupiah without decimal)
+    $('#oat, #transport').on('blur', function() {
+        let value = parseRupiah($(this).val());
+        $(this).val(formatRupiahInput(value));
+        calculateGrandTotal();
+    });
+
     // Form submission
     $('#form-proforma-invoice').on('submit', function(e) {
         e.preventDefault();
@@ -601,60 +799,169 @@ $(document).ready(function() {
         spinner.removeClass('d-none');
         txt.addClass('d-none');
 
-        // Prepare form data
-        const formData = new FormData(this);
+        // Recalculate totals and terbilang before submit
+        calculateGrandTotal();
 
-        // Add terbilang to form data
+        // Create new FormData to avoid duplicates
+        const formData = new FormData();
+
+        // Add all form fields except details (we'll handle details separately)
+        const formFields = $(this).serializeArray();
+        formFields.forEach(function(field) {
+            if (!field.name.includes('details[')) {
+                formData.append(field.name, field.value);
+            }
+        });
+
+        // Get payment method value
+        const paymentMethod = $('#payment_method').val();
+
+        // Ensure payment method is included with correct value
+        if (paymentMethod) {
+            // Get the selected option text from Select2 data
+            const select2Data = $('#payment_method').select2('data');
+            let paymentMethodText = paymentMethod;
+
+            if (select2Data && select2Data.length > 0) {
+                paymentMethodText = select2Data[0].value || select2Data[0].text || paymentMethod;
+            } else {
+                // Fallback to option text
+                const selectedOption = $('#payment_method option:selected');
+                paymentMethodText = selectedOption.text() || paymentMethod;
+            }
+
+            console.log('Payment method text:', paymentMethodText); // Debug log
+            formData.set('payment_method', paymentMethodText);
+        }
+
+        // Add all calculation values to payload
+        const subtotal = $('#subtotal').text().replace(/[^\d]/g, '') || '0';
+        const tax = $('#tax').text().replace(/[^\d]/g, '') || '0';
+        const pbbkb = $('#pbbkb').text().replace(/[^\d]/g, '') || '0';
+        // PPH 23 is now from input field (parse from rupiah format)
+        const pph23 = parseRupiah($('#pph23').val()) || 0;
+        // OAT and Transport are from input fields (parse from rupiah format)
+        const oat = parseRupiah($('#oat').val()) || 0;
+        const transport = parseRupiah($('#transport').val()) || 0;
+        const grandTotal = $('#grand-total').text().replace(/[^\d]/g, '') || '0';
         const terbilangText = $('#terbilang').text();
-        formData.append('terbilang', terbilangText);
 
-        // Submit form
-        fetch('/api/finance/proforma-invoices', {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                'Accept': 'application/json'
-            },
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            btn.prop('disabled', false);
-            spinner.addClass('d-none');
-            txt.removeClass('d-none');
+        console.log('Adding calculation values to payload:', { subtotal, tax, pbbkb, pph23, oat, transport, grandTotal, terbilangText }); // Debug log
 
-            if (data.success) {
+        formData.append('subtotal', subtotal);
+        formData.append('tax', tax);
+        formData.append('pbbkb', pbbkb);
+        formData.append('pph23', pph23);
+        formData.append('oat', oat);
+        formData.append('transport', transport);
+        formData.append('grand_total', grandTotal);
+
+        if (terbilangText && terbilangText.trim() !== '') {
+            formData.append('terbilang', terbilangText.trim());
+        }
+
+        // Add only non-empty details with proper indexing
+        let detailIndex = 0;
+        $('#invoice-items-table tbody tr').each(function() {
+            const namaItem = $(this).find('input[name*="[nama_item]"]').val();
+            const qty = $(this).find('input[name*="[qty]"]').val();
+            const harga = $(this).find('input[name*="[harga]"]').val();
+
+            console.log('Row data:', { namaItem, qty, harga }); // Debug log
+
+            if (namaItem && qty && harga) {
+                formData.append(`details[${detailIndex}][nama_item]`, namaItem);
+                formData.append(`details[${detailIndex}][qty]`, qty);
+                formData.append(`details[${detailIndex}][harga]`, harga);
+                detailIndex++;
+            }
+        });
+
+        // Add required fields that don't exist in proforma form (set to null)
+        formData.append('dn_no', '');
+        formData.append('invoice_date', '');
+        formData.append('fob', '');
+        formData.append('sent_via', '');
+        console.log('Adding required fields with null values: dn_no, invoice_date, fob, sent_via'); // Debug log
+
+        // Add type = 2 for proforma invoice
+        formData.append('type', '2');
+        console.log('Adding type to payload: 2'); // Debug log
+
+        console.log('FormData entries:'); // Debug log
+        for (let pair of formData.entries()) {
+            console.log(pair[0] + ': ' + pair[1]);
+        }
+
+        // Submit form using $.ajax (same as create.blade.php)
+        $.ajax({
+            url: '/api/finance/invoices', // Same endpoint as create.blade.php
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
                 Swal.fire({
                     icon: 'success',
                     title: 'Berhasil!',
-                    text: data.message || 'Proforma Invoice berhasil disimpan'
+                    text: response.message || 'Proforma Invoice berhasil disimpan',
                 }).then(() => {
-                    window.location.href = '/invoice';
+                    window.location.href = '{{ route("invoice") }}';
                 });
-            } else {
+            },
+            complete: function() {
+                btn.prop('disabled', false);
+                spinner.addClass('d-none');
+                txt.removeClass('d-none');
+            },
+            error: function(xhr) {
+                btn.prop('disabled', false);
+                spinner.addClass('d-none');
+                txt.removeClass('d-none');
+
+                let errorMsg = 'Terjadi kesalahan. Silakan coba lagi.';
+                let errorTitle = 'Oops...';
+                
+                if (xhr.responseJSON) {
+                    const response = xhr.responseJSON;
+                    
+                    if (response.errors && typeof response.errors === 'object') {
+                        let errorMessages = [];
+                        for (let field in response.errors) {
+                            if (Array.isArray(response.errors[field])) {
+                                errorMessages.push(...response.errors[field]);
+                            } else {
+                                errorMessages.push(response.errors[field]);
+                            }
+                        }
+                        
+                        if (errorMessages.length > 0) {
+                            errorMsg = errorMessages.join('<br>');
+                            errorTitle = response.message || 'Validation Error';
+                        } else if (response.message) {
+                            errorMsg = response.message;
+                        }
+                    } else if (response.message) {
+                        errorMsg = response.message;
+                    }
+                }
+                
                 Swal.fire({
                     icon: 'error',
-                    title: 'Error',
-                    text: data.message || 'Gagal menyimpan Proforma Invoice'
+                    title: errorTitle,
+                    html: errorMsg,
                 });
             }
-        })
-        .catch(error => {
-            btn.prop('disabled', false);
-            spinner.addClass('d-none');
-            txt.removeClass('d-none');
-
-            console.error('Submit error:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Terjadi kesalahan saat menyimpan. Silakan coba lagi.'
-            });
         });
     });
 
     // Set default date to today
     $('#sent_date').val(new Date().toISOString().split('T')[0]);
+
+    // Initialize PPH 23, OAT, and Transport format on page load
+    $('#pph23').val(formatRupiahInput(0));
+    $('#oat').val(formatRupiahInput(0));
+    $('#transport').val(formatRupiahInput(0));
 
     // Tambahkan baris pertama secara otomatis
     $('#btn-add-item').click();

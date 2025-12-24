@@ -1368,6 +1368,10 @@ $(document).ready(function() {
             formData.append('id', invoiceId);
         }
 
+        // Add type = 1 for invoice creation
+        formData.append('type', '1');
+        console.log('Adding type to payload: 1'); // Debug log
+
         // Debug payment method (reuse existing variable)
         console.log('Payment method value:', paymentMethod); // Debug log
         console.log('Payment method selected:', $('#payment_method').select2('data')); // Debug log
