@@ -69,6 +69,8 @@ Route::view('master-lokasi', 'master_lokasi.index')->name('master-lokasi')->midd
 Route::view('master-wilayah', 'master_lokasi.wilayah')->name('master-wilayah')->middleware('permission:master.wilayah');
 Route::view('workflow-engine', 'user_management.workflow')->name('workflow-engine')->middleware('permission:admin.workflow');
 Route::view('user-management', 'user_management.index')->name('user-management')->middleware('permission:admin.user');
+Route::view('manual-guide', 'manual.manual')->name('manual-guide')->middleware('permission:admin.manual');
+Route::view('manual-books', 'manual.books')->name('manual-books');
 Route::view('permission-management', 'user_management.permission')->name('permission-management')->middleware('permission:admin.menu');
 Route::view('user-log', 'user_management.userlog')->name('user-log')->middleware('permission:admin.logging');
 Route::view('invoice', 'invoice.index')->name('invoice')->middleware('permission:fin.menu');
