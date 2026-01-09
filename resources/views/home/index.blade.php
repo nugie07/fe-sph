@@ -167,14 +167,17 @@
                                         <th>No</th>
                                         <th>Customer</th>
                                         <th>PO Number</th>
-                                        <th>Request Date</th>
-                                        <th>Volume</th>
+                                        <th>Created At</th>
+                                        <th>Qty</th>
+                                        <th>Req Date</th>
                                         <th>Wilayah</th>
-                                        <th>DRS/DN No</th>
+                                        <th>SO</th>
+                                        <th>Vendor PO</th>
+                                        <th>Vendor Name</th>
+                                        <th>PO Qty</th>
                                         <th>Tanggal Bongkar</th>
                                         <th>Arrival Date</th>
                                         <th>BAST Date</th>
-                                        <th>Transporter</th>
                                         <th>Driver</th>
                                         <th>Nopol</th>
                                         <th>Status</th>
@@ -331,25 +334,65 @@
                         render: function (data, type, row, meta) {
                             return meta.row + meta.settings._iDisplayStart + 1;
                         },
-                        orderable: false,
-                        searchable: false
+                        orderable: true,
+                        searchable: false,
+                        orderData: [0]
                     },
                     { data: 'nama_customer' },
                     { data: 'po_no' },
                     {
-                        data: 'request_date',
+                        data: 'created_at',
                         render: function(data) {
-                            return data ? new Date(data).toLocaleDateString('id-ID') : '-';
+                            if (!data) return '-';
+                            // Format: "2024-01-15 10:30"
+                            var date = new Date(data);
+                            return date.toLocaleDateString('id-ID', {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit'
+                            }) + ' ' + date.toLocaleTimeString('id-ID', {
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            });
                         }
                     },
                     {
-                        data: 'volume',
+                        data: 'qty',
                         render: function(data) {
                             return data ? data.toLocaleString('id-ID') : '-';
                         }
                     },
-                    { data: 'wilayah' },
-                    { data: 'drs_dn_no' },
+                    {
+                        data: 'req_date',
+                        render: function(data) {
+                            return data ? new Date(data).toLocaleDateString('id-ID') : '-';
+                        }
+                    },
+                    { data: 'nama' },
+                    { 
+                        data: 'so',
+                        render: function(data) {
+                            return data || '-';
+                        }
+                    },
+                    { 
+                        data: 'vendor_po',
+                        render: function(data) {
+                            return data || '-';
+                        }
+                    },
+                    { 
+                        data: 'vendor_name',
+                        render: function(data) {
+                            return data || '-';
+                        }
+                    },
+                    {
+                        data: 'po_qty',
+                        render: function(data) {
+                            return data ? data.toLocaleString('id-ID') : '-';
+                        }
+                    },
                     {
                         data: 'tgl_bongkar',
                         render: function(data) {
@@ -368,20 +411,34 @@
                             return data ? new Date(data).toLocaleDateString('id-ID') : '-';
                         }
                     },
-                    { data: 'transporter_name' },
-                    { data: 'driver_name' },
-                                        { data: 'nopol' },
+                    { 
+                        data: 'driver_name',
+                        render: function(data) {
+                            return data || '-';
+                        }
+                    },
+                    { 
+                        data: 'nopol',
+                        render: function(data) {
+                            return data || '-';
+                        }
+                    },
                     {
-                        data: 'status',
+                        data: 'delivery_ket',
                         render: function(data, type, row) {
-                            if (data === 9) {
-                                return '<span class="badge bg-danger">Canceled</span>';
-                            } else if (data === 1) {
-                                return '<span class="badge bg-info">On Progress</span>';
-                            } else if (data === 2) {
-                                return '<span class="badge bg-success">Completed</span>';
+                            if (!data) return '<span class="badge bg-secondary">-</span>';
+                            
+                            var ket = data.toLowerCase();
+                            if (ket.includes('telat') || ket.includes('late')) {
+                                return '<span class="badge bg-danger">' + data + '</span>';
+                            } else if (ket.includes('ontime') || ket.includes('tepat')) {
+                                return '<span class="badge bg-success">' + data + '</span>';
+                            } else if (ket.includes('lebih awal') || ket.includes('early')) {
+                                return '<span class="badge bg-warning">' + data + '</span>';
+                            } else if (ket.includes('progress') || ket.includes('on progress')) {
+                                return '<span class="badge bg-info">' + data + '</span>';
                             } else {
-                                return '<span class="badge bg-secondary">Unknown</span>';
+                                return '<span class="badge bg-secondary">' + data + '</span>';
                             }
                         }
                     }
@@ -408,8 +465,8 @@
                 order: [[1, 'asc']],
                 responsive: true,
                 createdRow: function(row, data, dataIndex) {
-                    // Add red background for status = 9
-                    if (data.status === 9) {
+                    // Add red background for canceled status
+                    if (data.delivery_ket && (data.delivery_ket.toLowerCase().includes('canceled') || data.delivery_ket.toLowerCase().includes('batal'))) {
                         $(row).addClass('status-canceled');
                     }
                 }
