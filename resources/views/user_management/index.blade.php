@@ -59,6 +59,38 @@ div .action .reset-password {
 div .action .reset-password i {
     color: #e6ae30;
 }
+
+/* Loading Modal Animation */
+@keyframes progress-animation {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+#loadingModal {
+    z-index: 10000;
+}
+
+#loadingModal .modal-content {
+    border-radius: 15px;
+    border: none;
+}
+
+#loadingModal .modal-dialog {
+    z-index: 10001;
+}
+
+#loadingModal .progress {
+    background-color: #e9ecef;
+}
+
+#loadingModal .modal-backdrop {
+    z-index: 9999;
+    background-color: rgba(0, 0, 0, 0.5);
+}
 </style>
 @endsection
 
@@ -396,6 +428,24 @@ div .action .reset-password i {
         </div>
     </div>
 </div>
+
+<!-- Loading Modal with Progress Bar -->
+<div class="modal fade" id="loadingModal" tabindex="-1" aria-labelledby="loadingModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content" style="border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+            <div class="modal-body text-center" style="padding: 2rem;">
+                <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <h6 class="mb-3" style="color: #333; font-weight: 600;">Loading...</h6>
+                <p class="text-muted mb-3" style="font-size: 0.875rem;">Tunggu sebentar ya</p>
+                <div class="progress" style="height: 6px; border-radius: 10px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%; background: linear-gradient(90deg, #5b6be8 0%, #7c8ef0 50%, #5b6be8 100%); background-size: 200% 100%; animation: progress-animation 1.5s ease-in-out infinite;" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @section('scripts')
@@ -482,11 +532,29 @@ $(document).ready(function() {
 });
 
 function showLoading() {
-    $('#loading-overlay').show();
+    // Show Bootstrap modal for loading
+    const loadingModalElement = document.getElementById('loadingModal');
+    if (loadingModalElement) {
+        let loadingModal = bootstrap.Modal.getInstance(loadingModalElement);
+        if (!loadingModal) {
+            loadingModal = new bootstrap.Modal(loadingModalElement, {
+                backdrop: 'static',
+                keyboard: false
+            });
+        }
+        loadingModal.show();
+    }
 }
 
 function hideLoading() {
-    $('#loading-overlay').hide();
+    // Hide Bootstrap modal for loading
+    const loadingModalElement = document.getElementById('loadingModal');
+    if (loadingModalElement) {
+        const loadingModal = bootstrap.Modal.getInstance(loadingModalElement);
+        if (loadingModal) {
+            loadingModal.hide();
+        }
+    }
 }
 
 function showAlert(message, type = 'success') {
@@ -511,7 +579,6 @@ function showAlert(message, type = 'success') {
 }
 
 function loadUsers(page = 1) {
-    showLoading();
     currentPage = page;
 
     const params = new URLSearchParams({
@@ -541,9 +608,6 @@ function loadUsers(page = 1) {
         error: function(xhr) {
             console.error('Error loading users:', xhr);
             showAlert('Error loading users data', 'error');
-        },
-        complete: function() {
-            hideLoading();
         }
     });
 }
@@ -795,8 +859,6 @@ function createUser() {
 }
 
 function openEditModal(userId) {
-    showLoading();
-
     // Find user data from the current table
     $.ajax({
         url: `/api/user-management?search=${userId}`,
@@ -823,9 +885,6 @@ function openEditModal(userId) {
         error: function(xhr) {
             console.error('Error loading user data:', xhr);
             showAlert('Error loading user data', 'error');
-        },
-        complete: function() {
-            hideLoading();
         }
     });
 }
