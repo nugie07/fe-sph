@@ -118,7 +118,7 @@ function showSessionExpiredModal() {
     $('#sessionExpiredModal').modal({backdrop: 'static', keyboard: false});
     $('#sessionExpiredModal').modal('show');
     $('#btnSessionExpiredOk').off('click').on('click', function(){
-        logout();
+        logout(true); // Pass true to indicate session expired
     });
 }
 
@@ -177,12 +177,19 @@ function startSessionChecker() {
     setInterval(checkSessionOnce, 5 * 60 * 1000);
 }
 
-// Logout via POST (submit form)
-function logout() {
+// Logout via POST (submit form) or direct redirect if session expired
+function logout(sessionExpired = false) {
     // Clear localStorage before logout
     clearLocalStorage();
 
-    // Check if logout form exists
+    // If session expired, directly redirect to login without submitting form
+    // This avoids 419 CSRF token error when session is already expired
+    if (sessionExpired) {
+        window.location.href = '/';
+        return;
+    }
+
+    // Normal logout: submit form with CSRF token
     const logoutForm = document.getElementById('logout-form');
     if (logoutForm) {
         logoutForm.submit();

@@ -131,6 +131,10 @@
             <input type="number" class="form-control" id="detail_sequence" name="sequence" min="1" required>
           </div>
           <div class="mb-3">
+            <label for="detail_title" class="form-label">Title <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="detail_title" name="title" required>
+          </div>
+          <div class="mb-3">
             <label for="detail_content" class="form-label">Content <span class="text-danger">*</span></label>
             <textarea class="form-control" id="detail_content" name="content" rows="10" required></textarea>
           </div>
@@ -339,7 +343,7 @@ $(document).ready(function() {
           
           if (details.length > 0) {
             html += '<table class="table table-bordered table-sm">';
-            html += '<thead><tr><th width="80px">Sequence</th><th>Content</th><th width="150px">Action</th></tr></thead>';
+            html += '<thead><tr><th width="80px">Sequence</th><th>Title</th><th>Content</th><th width="150px">Action</th></tr></thead>';
             html += '<tbody>';
             
             details.forEach(function(detail) {
@@ -347,6 +351,7 @@ $(document).ready(function() {
               const contentText = detail.content ? detail.content.replace(/<[^>]*>/g, '').substring(0, 100) : '';
               html += '<tr data-detail-id="' + detail.id + '">';
               html += '<td>' + detail.sequence + '</td>';
+              html += '<td><strong>' + (detail.title || '-') + '</strong></td>';
               html += '<td><div class="content-preview">' + contentText + (contentText.length >= 100 ? '...' : '') + '</div></td>';
               html += '<td>';
               html += '<button class="btn btn-sm btn-primary btn-edit-detail" data-id="' + detail.id + '" title="Edit">';
@@ -539,6 +544,7 @@ $(document).ready(function() {
     $('#detail_id').val('');
     $('#detail_menu_id').val(manualId);
     $('#detail_sequence').val('');
+    $('#detail_title').val('');
     // Show modal first, then initialize editor
     $('#modalManualDetail').modal('show');
   });
@@ -557,6 +563,7 @@ $(document).ready(function() {
           $('#detail_id').val(data.id);
           $('#detail_menu_id').val(data.menu_id);
           $('#detail_sequence').val(data.sequence);
+          $('#detail_title').val(data.title || '');
           // Show modal first, then set content after editor is initialized
           $('#modalManualDetail').modal('show');
           // Set content after a short delay to ensure editor is ready
@@ -669,6 +676,7 @@ $(document).ready(function() {
     const data = {
       menu_id: parseInt($('#detail_menu_id').val()),
       sequence: parseInt($('#detail_sequence').val()),
+      title: $('#detail_title').val(),
       content: content
     };
 

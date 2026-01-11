@@ -302,8 +302,9 @@
           html += '<div class="menu-details' + (isExpanded ? ' show' : '') + '" data-menu-id="' + menu.id + '">';
           menu.details.forEach(function(detail) {
             const isActive = selectedDetailId === detail.id;
+            const detailTitle = detail.title || (detail.content ? stripHtml(detail.content).substring(0, 50) + '...' : 'Detail ' + detail.sequence);
             html += '<div class="menu-detail-item' + (isActive ? ' active' : '') + '" data-detail-id="' + detail.id + '" data-menu-id="' + menu.id + '">';
-            html += '  ' + detail.sequence + '. ' + (detail.content ? stripHtml(detail.content).substring(0, 50) + '...' : 'Detail ' + detail.sequence);
+            html += '  ' + detail.sequence + '. ' + detailTitle;
             html += '</div>';
           });
           html += '</div>';
@@ -376,7 +377,8 @@
     // Display content in right pane
     function displayContent(detail) {
       $('#contentPlaceholder').hide();
-      $('#contentTitle').text('Detail ' + detail.sequence);
+      const title = detail.title || ('Detail ' + detail.sequence);
+      $('#contentTitle').text(title);
       $('#contentBody').html(detail.content || '<p>No content available</p>');
       $('#contentDisplay').addClass('show');
     }

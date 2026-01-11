@@ -21,17 +21,7 @@
       </div>
       <div class="left-header col horizontal-wrapper ps-0">
         <div class="left-menu-header">
-          <ul class="app-list">
-            <li class="onhover-dropdown">
-              <div class="app-menu"> <i data-feather="folder-plus"></i></div>
-              <ul class="onhover-show-div left-dropdown">
-                <li> <a href="{{ route('file_manager') }}">File Manager</a></li>
-                <li> <a href="{{ route('kanban') }}"> Kanban board</a></li>
-                <li> <a href="{{ route('social_app') }}"> Social App</a></li>
-                <li> <a href="{{ route('bookmark') }}"> Bookmark</a></li>
-              </ul>
-            </li>
-          </ul>
+          {{-- Removed unused menu items: file_manager, kanban, social_app, bookmark --}}
           <ul class="header-left">
 
             <li class="welcome-message" style="font-size: 16px;">
