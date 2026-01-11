@@ -198,11 +198,14 @@ $(document).ready(function() {
     }
   }
   
-  // Initialize when modal is shown
+  // Initialize when modal is shown (only if editor not already initialized)
   $('#modalManualDetail').on('shown.bs.modal', function() {
-    setTimeout(function() {
-      initCKEditor();
-    }, 100);
+    // Only initialize if editor doesn't exist
+    if (!ckeditorInstance) {
+      setTimeout(function() {
+        initCKEditor();
+      }, 100);
+    }
   });
   
   // Destroy editor when modal is hidden
@@ -558,24 +561,56 @@ $(document).ready(function() {
       success: function(response) {
         if (response.success && response.data) {
           const data = response.data;
+          console.log('Edit Detail - API Response:', data); // Debug
+          console.log('Title from API:', data.title); // Debug
           currentManualId = data.menu_id;
           $('#modalManualDetailLabel').text('Edit Manual Detail');
-          $('#detail_id').val(data.id);
-          $('#detail_menu_id').val(data.menu_id);
-          $('#detail_sequence').val(data.sequence);
-          $('#detail_title').val(data.title || '');
-          // Show modal first, then set content after editor is initialized
+          
+          // Clear form first
+          $('#formManualDetail')[0].reset();
+          $('#detail_id').val('');
+          
+          // Show modal first
           $('#modalManualDetail').modal('show');
-          // Set content after a short delay to ensure editor is ready
-          setTimeout(function() {
-            if (ckeditorInstance) {
-              ckeditorInstance.setData(data.content || '');
-            }
-          }, 200);
+          
+          // Set form values after modal is fully shown to avoid timing issues
+          $('#modalManualDetail').one('shown.bs.modal', function() {
+            // Set all form values
+            $('#detail_id').val(data.id || '');
+            $('#detail_menu_id').val(data.menu_id || '');
+            $('#detail_sequence').val(data.sequence || '');
+            $('#detail_title').val(data.title || '');
+            
+            console.log('Form values set:'); // Debug
+            console.log('- ID:', $('#detail_id').val()); // Debug
+            console.log('- Menu ID:', $('#detail_menu_id').val()); // Debug
+            console.log('- Sequence:', $('#detail_sequence').val()); // Debug
+            console.log('- Title:', $('#detail_title').val()); // Debug
+            
+            // Set content after editor is initialized
+            setTimeout(function() {
+              if (ckeditorInstance) {
+                ckeditorInstance.setData(data.content || '');
+              } else {
+                // If editor not ready, try again
+                setTimeout(function() {
+                  if (ckeditorInstance) {
+                    ckeditorInstance.setData(data.content || '');
+                  }
+                }, 100);
+              }
+            }, 200);
+          });
+        } else {
+          console.error('Invalid response:', response); // Debug
+          Swal.fire('Error', 'Invalid response from server', 'error');
         }
       },
       error: function(xhr) {
-        Swal.fire('Error', 'Failed to load detail data', 'error');
+        console.error('Error loading detail:', xhr); // Debug
+        console.error('Response:', xhr.responseJSON); // Debug
+        const errorMsg = xhr.responseJSON?.message || 'Failed to load detail data';
+        Swal.fire('Error', errorMsg, 'error');
       }
     });
   });
@@ -665,6 +700,11 @@ $(document).ready(function() {
     const url = detailId ? '/api/manual-details/' + detailId : '/api/manual-details';
     const method = detailId ? 'PUT' : 'POST';
     
+    // Get form values
+    const menuId = $('#detail_menu_id').val();
+    const sequence = $('#detail_sequence').val();
+    const title = $('#detail_title').val();
+    
     // Get content from CKEditor
     let content = '';
     if (ckeditorInstance) {
@@ -673,19 +713,46 @@ $(document).ready(function() {
       content = $('#detail_content').val();
     }
     
+    // Build payload
     const data = {
-      menu_id: parseInt($('#detail_menu_id').val()),
-      sequence: parseInt($('#detail_sequence').val()),
-      title: $('#detail_title').val(),
+      menu_id: parseInt(menuId),
+      sequence: parseInt(sequence),
+      title: title,
       content: content
     };
+    
+    // Debug: Log payload before sending
+    console.log('========================================');
+    console.log('=== SAVE MANUAL DETAIL PAYLOAD ===');
+    console.log('URL:', window.location.origin + url);
+    console.log('Method:', method);
+    console.log('Full URL:', url);
+    console.log('');
+    console.log('PAYLOAD JSON:');
+    console.log(JSON.stringify(data, null, 2));
+    console.log('');
+    console.log('PAYLOAD OBJECT:');
+    console.log(data);
+    console.log('');
+    console.log('Field Values:');
+    console.log('- menu_id:', data.menu_id, '(type:', typeof data.menu_id + ')');
+    console.log('- sequence:', data.sequence, '(type:', typeof data.sequence + ')');
+    console.log('- title:', data.title, '(type:', typeof data.title + ')', data.title ? '✅' : '❌ EMPTY');
+    console.log('- content:', data.content ? data.content.substring(0, 50) + '...' : 'EMPTY');
+    console.log('========================================');
 
     $.ajax({
       url: url,
       type: method,
       contentType: 'application/json',
       data: JSON.stringify(data),
+      beforeSend: function(xhr) {
+        console.log('🚀 Sending request to:', url);
+        console.log('📦 Payload being sent:', JSON.stringify(data));
+      },
       success: function(response) {
+        console.log('✅ Save success response:', response);
+        console.log('📥 Response data:', response.data);
         if (response.success) {
           Swal.fire('Success', response.message, 'success');
           $('#modalManualDetail').modal('hide');
@@ -697,6 +764,10 @@ $(document).ready(function() {
         }
       },
       error: function(xhr) {
+        console.error('❌ Save error:', xhr);
+        console.error('📥 Error response:', xhr.responseJSON);
+        console.error('🔗 Request URL:', url);
+        console.error('📦 Request payload:', JSON.stringify(data));
         const message = xhr.responseJSON?.message || 'Failed to save detail';
         Swal.fire('Error', message, 'error');
       }
