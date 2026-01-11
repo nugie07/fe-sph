@@ -61,56 +61,6 @@
       </div>
     </div>
   </div>
-
-  <div class="container-fluid general-widget">
-    <div class="row justify-content-center">
-        <div class="col-sm-6 col-lg-3">
-            <div class="card o-hidden">
-                <div class="card-header pb-0">
-                    <div class="d-flex">
-                        <div class="flex-grow-1">
-                            <p class="square-after f-w-600 header-text-primary">Total SPH Dibuat<i class="fa fa-circle"></i></p>
-                            <h4 id="card-total_sph">-</h4>
-                        </div>
-                        <div class="d-flex static-widget">
-                                <i data-feather="file-text" class="text-primary" style="width: 40px; height: 40px;"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-lg-3">
-            <div class="card o-hidden product-widget">
-                <div class="card-header pb-0">
-                    <div class="d-flex">
-                        <div class="flex-grow-1">
-                            <p class="square-after f-w-600 header-text-success">Total PO Belum Diterima<i class="fa fa-circle"></i></p>
-                            <h4 id="card-waiting">-</h4>
-                        </div>
-                        <div class="d-flex static-widget">
-                            <i data-feather="slack" class="text-success" style="width: 40px; height: 40px;"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-lg-3">
-            <div class="card o-hidden message-widget">
-                <div class="card-header pb-0">
-                    <div class="d-flex">
-                        <div class="flex-grow-1">
-                            <p class="square-after f-w-600 header-text-danger">Total PO Diterima<i class="fa fa-circle"></i></p>
-                            <h4 id="card-revisi">-</h4>
-                        </div>
-                        <div class="d-flex static-widget">
-                            <i data-feather="edit" class="text-danger" style="width: 40px; height: 40px;"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-  </div>
   
   <div class="col-sm-12">
     <div class="card">

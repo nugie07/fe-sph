@@ -67,6 +67,76 @@
         .toast {
             border-radius: 0.5rem;
         }
+
+        /* Manual Guide Modal Styling */
+        .manual-guide-icons {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 30px;
+            padding: 20px 0;
+        }
+
+        .icon-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .icon-item.highlighted .icon-wrapper {
+            border: 3px solid #007bff;
+            border-radius: 8px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+        }
+
+        .icon-wrapper {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            padding: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .icon-item i {
+            width: 30px;
+            height: 30px;
+            stroke-width: 1.5;
+        }
+
+        .icon-label {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #333;
+            text-align: center;
+            max-width: 120px;
+            font-weight: 500;
+        }
+
+        .icon-item.highlighted .icon-label {
+            color: #007bff;
+            font-weight: 600;
+        }
+
+        #manualGuideModal .modal-body {
+            padding: 30px;
+        }
+
+        #manualGuideModal .modal-body p {
+            font-size: 16px;
+            color: #495057;
+        }
+
+        #manualGuideModal .modal-footer {
+            border-top: 1px solid #dee2e6;
+            padding: 20px;
+        }
     </style>
 @endsection
 
@@ -225,6 +295,54 @@
         </div>
     </div>
 
+    <!-- Manual Guide Modal -->
+    <div class="modal fade" id="manualGuideModal" tabindex="-1" aria-labelledby="manualGuideModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="manualGuideModalLabel">Akses ke Manual Guide</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <p class="mb-4">Gunakan Manual Guides sebagai panduan penggunaan Aplikasi SPH</p>
+                    
+                    <!-- Icon Row -->
+                    <div class="manual-guide-icons mb-4">
+                        <div class="icon-item highlighted">
+                            <div class="icon-wrapper">
+                                <i data-feather="book" class="icon-book"></i>
+                            </div>
+                            <p class="icon-label">Ini adalah menu manual guides</p>
+                        </div>
+                        <div class="icon-item">
+                            <div class="icon-wrapper">
+                                <i data-feather="message-square" class="icon-message"></i>
+                            </div>
+                        </div>
+                        <div class="icon-item">
+                            <div class="icon-wrapper">
+                                <i data-feather="maximize-2" class="icon-maximize"></i>
+                            </div>
+                        </div>
+                        <div class="icon-item">
+                            <div class="icon-wrapper">
+                                <i data-feather="user" class="icon-user"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-primary" id="btnOpenManualGuide" style="border-radius: 0.5rem;">
+                        Buka Manual Guide
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="btnSkipManualGuide" style="border-radius: 0.5rem;">
+                        Skip
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Container -->
     <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;">
         <div id="passwordToast" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive" aria-atomic="true">
@@ -300,6 +418,9 @@
             $('#confirmPassword').on('input', function() {
                 validatePasswordConfirmation();
             });
+
+            // Manual Guide Modal handlers
+            initManualGuideModal();
         });
 
         function initializeDataTable() {
@@ -549,7 +670,110 @@
             btnText.textContent = originalText;
         }
 
-                function createPassword() {
+                function initManualGuideModal() {
+            // Get MAN_SETTINGS from env (1 = always show, 0 or not set = show once per session)
+            var manSettings = {{ env('MAN_SETTINGS', 0) }};
+            
+            // Check if modal should be shown
+            // If MAN_SETTINGS = 1, always show (ignore sessionStorage)
+            // If MAN_SETTINGS != 1, show only once per session
+            var manualGuideShown = sessionStorage.getItem('manualGuideModalShown');
+            var shouldShow = (manSettings == 1) ? true : !manualGuideShown;
+            
+            // Function to show modal
+            function showModal() {
+                var passwordModal = document.getElementById('createPasswordModal');
+                var isPasswordModalShown = passwordModal && $(passwordModal).hasClass('show');
+                
+                // Only show manual guide modal if password modal is not shown
+                if (!isPasswordModalShown) {
+                    var modal = new bootstrap.Modal(document.getElementById('manualGuideModal'));
+                    modal.show();
+                    
+                    // Initialize feather icons after modal is shown (one-time event)
+                    $('#manualGuideModal').one('shown.bs.modal', function() {
+                        setTimeout(function() {
+                            if (typeof feather !== 'undefined') {
+                                feather.replace();
+                            }
+                        }, 100);
+                    });
+                } else {
+                    // If password modal is shown, wait for it to close
+                    $('#createPasswordModal').one('hidden.bs.modal', function() {
+                        setTimeout(function() {
+                            var modal = new bootstrap.Modal(document.getElementById('manualGuideModal'));
+                            modal.show();
+                            
+                            // Initialize feather icons after modal is shown
+                            $('#manualGuideModal').one('shown.bs.modal', function() {
+                                setTimeout(function() {
+                                    if (typeof feather !== 'undefined') {
+                                        feather.replace();
+                                    }
+                                }, 100);
+                            });
+                        }, 500);
+                    });
+                }
+            }
+            
+            if (shouldShow) {
+                // Wait a bit for page to load, then show modal
+                setTimeout(showModal, 1500);
+            }
+
+            // Button "Buka Manual Guide" handler
+            $('#btnOpenManualGuide').on('click', function() {
+                // Try to find and click the manual guide button in header
+                var manualGuideLink = document.querySelector('.manual-guides a');
+                var manualGuideUrl = '{{ route("manual-books") }}';
+                
+                if (manualGuideLink && manualGuideLink.href) {
+                    // Open the link (it already has target="_blank")
+                    window.open(manualGuideLink.href, '_blank');
+                } else if (manualGuideUrl) {
+                    // Fallback: use route URL
+                    window.open(manualGuideUrl, '_blank');
+                } else {
+                    console.warn('Manual guide route not found');
+                }
+                
+                // Close modal
+                var modal = bootstrap.Modal.getInstance(document.getElementById('manualGuideModal'));
+                if (modal) {
+                    modal.hide();
+                }
+                
+                // Only mark as shown if MAN_SETTINGS is not 1 (not forced to show)
+                if (manSettings != 1) {
+                    sessionStorage.setItem('manualGuideModalShown', 'true');
+                }
+            });
+
+            // Button "Skip" handler
+            $('#btnSkipManualGuide').on('click', function() {
+                var modal = bootstrap.Modal.getInstance(document.getElementById('manualGuideModal'));
+                if (modal) {
+                    modal.hide();
+                }
+                
+                // Only mark as shown if MAN_SETTINGS is not 1 (not forced to show)
+                if (manSettings != 1) {
+                    sessionStorage.setItem('manualGuideModalShown', 'true');
+                }
+            });
+
+            // Also handle close button (X)
+            $('#manualGuideModal').on('hidden.bs.modal', function() {
+                // Only mark as shown if MAN_SETTINGS is not 1 (not forced to show)
+                if (manSettings != 1) {
+                    sessionStorage.setItem('manualGuideModalShown', 'true');
+                }
+            });
+        }
+
+        function createPassword() {
             const password = $('#newPassword').val();
             const confirmPassword = $('#confirmPassword').val();
 
