@@ -45,8 +45,9 @@
             </div>
           </li>
 
-            <li class="manual-guides"><a href="{{ route('manual-books') }}" target="_blank" title="Manual Guides"><i
-                data-feather="book"></i></a></li>
+            {{-- Hidden: Manual Guides button --}}
+            {{-- <li class="manual-guides"><a href="{{ route('manual-books') }}" target="_blank" title="Manual Guides"><i
+                data-feather="book"></i></a></li> --}}
             <li class="message"><a href="#!" onclick=""><i
                 data-feather="message-square"></i></a></li>
           </li>

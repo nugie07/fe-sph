@@ -295,8 +295,8 @@
         </div>
     </div>
 
-    <!-- Manual Guide Modal -->
-    <div class="modal fade" id="manualGuideModal" tabindex="-1" aria-labelledby="manualGuideModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    {{-- Manual Guide Modal - HIDDEN --}}
+    {{-- <div class="modal fade" id="manualGuideModal" tabindex="-1" aria-labelledby="manualGuideModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
@@ -341,7 +341,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div> --}}
 
     <!-- Toast Container -->
     <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;">
@@ -419,8 +419,8 @@
                 validatePasswordConfirmation();
             });
 
-            // Manual Guide Modal handlers
-            initManualGuideModal();
+            // Manual Guide Modal handlers - DISABLED
+            // initManualGuideModal();
         });
 
         function initializeDataTable() {

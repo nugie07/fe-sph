@@ -21,6 +21,22 @@
   .detail-badge {
     margin-left: 10px;
   }
+  
+  /* Fix CKEditor dialog z-index to appear above Bootstrap modal */
+  .cke_dialog {
+    z-index: 10050 !important;
+  }
+  
+  .cke_dialog_background_cover {
+    z-index: 10049 !important;
+  }
+  
+  /* Ensure inputs in CKEditor dialog can receive input */
+  .cke_dialog input,
+  .cke_dialog textarea,
+  .cke_dialog select {
+    pointer-events: auto !important;
+  }
 </style>
 @endsection
 
@@ -177,8 +193,12 @@ $(document).ready(function() {
     }
     // Initialize CKEditor
     if (typeof CKEDITOR !== 'undefined') {
+      // Set base z-index for CKEditor dialogs
+      CKEDITOR.config.baseFloatZIndex = 10050;
+      
       ckeditorInstance = CKEDITOR.replace('detail_content', {
         height: 300,
+        baseFloatZIndex: 10050,
         toolbar: [
           { name: 'document', items: ['Source', '-', 'Save', 'NewPage', 'Preview', 'Print', '-', 'Templates'] },
           { name: 'clipboard', items: ['Cut', 'Copy', 'Paste', 'PasteText', 'PasteFromWord', '-', 'Undo', 'Redo'] },
@@ -193,7 +213,30 @@ $(document).ready(function() {
           { name: 'styles', items: ['Styles', 'Format', 'Font', 'FontSize'] },
           { name: 'colors', items: ['TextColor', 'BGColor'] },
           { name: 'tools', items: ['Maximize', 'ShowBlocks'] }
-        ]
+        ],
+        on: {
+          instanceReady: function(ev) {
+            var editor = this;
+            
+            // When CKEditor dialog opens, disable pointer events on backdrop and modal
+            editor.on('dialogShow', function(e) {
+              // Disable pointer events on backdrop, modal, and modal content so dialog can receive input
+              $('.modal-backdrop').css('pointer-events', 'none');
+              $('#modalManualDetail').css('pointer-events', 'none');
+              $('#modalManualDetail .modal-content').css('pointer-events', 'none');
+            });
+            
+            // When CKEditor dialog closes, restore pointer events
+            editor.on('dialogHide', function(e) {
+              // Restore pointer events
+              setTimeout(function() {
+                $('.modal-backdrop').css('pointer-events', 'auto');
+                $('#modalManualDetail').css('pointer-events', 'auto');
+                $('#modalManualDetail .modal-content').css('pointer-events', 'auto');
+              }, 100);
+            });
+          }
+        }
       });
     }
   }
