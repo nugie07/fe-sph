@@ -59,9 +59,10 @@ use App\Helpers\PermissionHelper;
                 @if(PermissionHelper::hasSubMenuAccess('fin.menu', 'fin.inv.menu'))
                 <li><a href="{{route('invoice')}}">Invoice</a></li>
                 @endif
-                @if(PermissionHelper::hasSubMenuAccess('fin.menu', 'fin.ap.menu'))
+                {{-- Hidden: Cetak PO menu --}}
+                {{-- @if(PermissionHelper::hasSubMenuAccess('fin.menu', 'fin.ap.menu'))
                 <li><a href="{{route('cetak-po')}}">Cetak PO</a></li>
-                @endif
+                @endif --}}
                 @if(PermissionHelper::hasSubMenuAccess('fin.menu', 'fin.ap.menu'))
                 <li><a href="{{route('bayar-po')}}">Account Payable</a></li>
                 @endif
