@@ -77,9 +77,10 @@ use App\Helpers\PermissionHelper;
             @if(PermissionHelper::hasMenuAccess('log.menu'))
             <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title" href="javascript:void(0)"><i data-feather="truck"></i><span>Logistik & Delivery</span></a>
               <ul class="sidebar-submenu">
-                @if(PermissionHelper::hasSubMenuAccess('log.menu', 'log.drs.menu'))
+                {{-- Hidden: DRS menu --}}
+                {{-- @if(PermissionHelper::hasSubMenuAccess('log.menu', 'log.drs.menu'))
                 <li><a href="{{route('delivery_request')}}">DRS</a></li>
-                @endif
+                @endif --}}
                 @if(PermissionHelper::hasSubMenuAccess('log.menu', 'log.drs.menu'))
                 <li><a href="{{route('delivery_note')}}">Pembuatan DN No</a></li>
                 @endif
