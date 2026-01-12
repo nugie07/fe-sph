@@ -41,9 +41,10 @@ use App\Helpers\PermissionHelper;
                 @if(PermissionHelper::hasSubMenuAccess('sph.menu', 'sph.o.menu'))
                 <li><a href="{{route('sph')}}">Overview</a></li>
                 @endif
-                @if(PermissionHelper::hasSubMenuAccess('sph.menu', 'sph.c.menu'))
+                {{-- Hidden: Create new menu --}}
+                {{-- @if(PermissionHelper::hasSubMenuAccess('sph.menu', 'sph.c.menu'))
                 <li><a href="{{route('sph_create')}}">Create new</a></li>
-                @endif
+                @endif --}}
                 @if(PermissionHelper::hasSubMenuAccess('sph.menu', 'sph.po.menu'))
                 <li><a href="{{route('good_receipt')}}">Customer PO</a></li>
                 @endif
