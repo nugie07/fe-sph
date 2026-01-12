@@ -501,6 +501,7 @@ $(document).ready(function() {
       url: '/api/dn-source',
       dataType: 'json',
       processResults: function(data) {
+        console.log('[DEBUG] Select2 processResults - Data received:', data);
         let results = {
           results: data.map(function(dn){
             return {id: dn.dn_no, text: dn.dn_no, data: dn};
@@ -508,12 +509,22 @@ $(document).ready(function() {
         };
         showDnOverlayLoading(false);
         return results;
+      },
+      error: function(xhr, status, error) {
+        console.error('[DEBUG] Select2 AJAX Error:', {xhr, status, error});
+        showDnOverlayLoading(false);
       }
     },
     placeholder: 'Pilih DN No',
     allowClear: true
   }).on('select2:select', function(e){
+    console.log('[DEBUG] Select2:select event triggered', e);
+    e.preventDefault();
+    e.stopPropagation();
+    
     let dn = e.params.data.data;
+    console.log('[DEBUG] Selected DN data:', dn);
+    
     // Autofill fields
     $('#drs_unique').val(dn.drs_unique || '');
     $('#customer_po').val(dn.customer_po || '');
@@ -560,18 +571,35 @@ $(document).ready(function() {
     $('#qty').val(dn.qty || '');
     $('#description').val(dn.description || '');
     $('#transportir').val(dn.transportir || '');
+    
+    console.log('[DEBUG] Form fields filled successfully');
   }).on('select2:clear', function(e){
+    console.log('[DEBUG] Select2:clear event triggered');
+    e.preventDefault();
+    e.stopPropagation();
     $('#drs_unique,#customer_po,#customer_name,#po_date,#delivery_to,#address,#qty,#description,#transportir').val('');
     $('#arrival_date').val('');
     var datepicker = $('#arrival_date').datepicker().data('datepicker');
     if(datepicker) {
         datepicker.clear();
     }
+  }).on('select2:open', function(e) {
+    console.log('[DEBUG] Select2:open event triggered');
+    showDnOverlayLoading(false);
+  }).on('select2:close', function(e) {
+    console.log('[DEBUG] Select2:close event triggered');
   });
 
-  // Hide overlay when select2 is open (fallback)
-  $('#dn_no').on('select2:open', function() {
-    showDnOverlayLoading(false);
+  // Prevent modal from closing when clicking on select2 dropdown
+  $(document).on('click', '.select2-container--open', function(e) {
+    console.log('[DEBUG] Click on select2 container - preventing modal close');
+    e.stopPropagation();
+  });
+  
+  // Prevent modal from closing when clicking inside select2 results
+  $(document).on('click', '.select2-results__option', function(e) {
+    console.log('[DEBUG] Click on select2 option - preventing modal close');
+    e.stopPropagation();
   });
 
   // Datepicker for arrival_date
@@ -590,6 +618,7 @@ $(document).ready(function() {
 
   // Open modal in create mode
   $('#btn-create-delivery-note').on('click', function(){
+    console.log('[DEBUG] Create delivery note button clicked');
     showDnOverlayLoading(true);
     deliveryNoteMode = 'create';
     $('#modalDeliveryNoteLabel').text('Create Delivery Note');
@@ -604,9 +633,12 @@ $(document).ready(function() {
     $('#form-delivery-note [name=dn_no]').prop('disabled', false);
     $('#form-delivery-note .invalid-feedback').hide();
     $('#btn-save-delivery-note').show();
+    
     deliveryNoteModal.show();
+    console.log('[DEBUG] Modal shown, waiting for select2 initialization...');
     setTimeout(function() {
       showDnOverlayLoading(false);
+      console.log('[DEBUG] Overlay loading hidden');
     }, 500);
   });
 
@@ -885,7 +917,8 @@ $(document).ready(function() {
   });
 
   // Reset modal on close
-  $('#modal-delivery-note').on('hidden.bs.modal', function(){
+  $('#modal-delivery-note').on('hidden.bs.modal', function(e){
+    console.log('[DEBUG] Modal hidden event triggered', e);
     $('#form-delivery-note')[0].reset();
     $('#dn_no').val(null).trigger('change');
     $('#form-delivery-note').removeClass('was-validated');
@@ -893,6 +926,40 @@ $(document).ready(function() {
     // Reset kolom baru juga
     $('#berat_jenis').val('');
     $('#temperature').val('');
+  });
+  
+  // Prevent modal from closing when clicking outside (only if not clicking on select2)
+  $('#modal-delivery-note').on('click', function(e) {
+    if ($(e.target).hasClass('modal') && !$(e.target).closest('.select2-container').length) {
+      console.log('[DEBUG] Click on modal backdrop detected');
+    }
+  });
+  
+  // Additional protection: prevent backdrop click from closing modal when select2 is open
+  $(document).on('click', '.modal-backdrop', function(e) {
+    if ($('.select2-container--open').length > 0) {
+      console.log('[DEBUG] Backdrop clicked but select2 is open - preventing close');
+      e.stopPropagation();
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // Prevent modal hide event when select2 is interacting
+  $('#modal-delivery-note').on('hide.bs.modal', function(e) {
+    console.log('[DEBUG] Modal hide.bs.modal event triggered');
+    if ($('.select2-container--open').length > 0) {
+      console.log('[DEBUG] Select2 is open - preventing modal close');
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      return false;
+    }
+    console.log('[DEBUG] Modal close allowed');
+  });
+  
+  // Log when modal is about to be hidden
+  $('#modal-delivery-note').on('hidePrevented.bs.modal', function() {
+    console.log('[DEBUG] Modal hide was prevented');
   });
   $('#modal-delivery-note').on('shown.bs.modal', function(){
     showDnOverlayLoading(false);
