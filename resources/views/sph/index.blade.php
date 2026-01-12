@@ -404,11 +404,27 @@ use App\Helpers\PermissionHelper;
             var rows = res.data.map(function(item){
                 var statusHtml;
                 var actionHtml = '';
-                switch(item.status){
+                // Normalize status to integer for comparison (handle string, number, null, undefined)
+                var status = parseInt(String(item.status || '').trim()) || 0;
+                
+                // Status mapping
+                var statusMap = {
+                    1: { label: 'Menunggu Approval', class: 'bg-info' },
+                    2: { label: 'Revisi', class: 'bg-warning' },
+                    3: { label: 'Reject', class: 'bg-danger' },
+                    4: { label: 'Approved', class: 'bg-success' }
+                };
+                
+                // Get status info from map or use status_label from API
+                var statusInfo = statusMap[status] || null;
+                var statusLabel = statusInfo ? statusInfo.label : (item.status_label || 'Unknown');
+                var badgeClass = statusInfo ? statusInfo.class : 'bg-secondary';
+                
+                switch(status){
                     case 1:
-                        statusHtml = `<span class="badge bg-info badge-status-remark"
+                        statusHtml = `<span class="badge ${badgeClass} badge-status-remark"
                             title="${item.workflow||''}"
-                            style="cursor:pointer;" data-sph-id="${item.id}">Menunggu Approval</span>`;
+                            style="cursor:pointer;" data-sph-id="${item.id}">${statusLabel}</span>`;
                         actionHtml +=
                             `<i class="fa fa-eye text-primary fa-md btn-view-sph"
                                 title="Lihat Detail"
@@ -420,8 +436,8 @@ use App\Helpers\PermissionHelper;
                             style="cursor:pointer;font-size:1.25em;"></i> <span class="text-danger fw-bold ms-1" style="font-size:0.8em;">Cancel</span>`;
                         break;
                     case 2:
-                        statusHtml = `<span class="badge bg-warning badge-status-remark"
-                            data-sph-id="${item.id}" style="cursor:pointer;">Revisi</span>
+                        statusHtml = `<span class="badge ${badgeClass} badge-status-remark"
+                            data-sph-id="${item.id}" style="cursor:pointer;">${statusLabel}</span>
                             <span class="badge bg-primary text-white ms-1 btn-edit-sph" data-sph-id="${item.id}" data-template-id="${item.template_id||''}" data-template-form="${item.template_form||''}" style="cursor:pointer;"><i class="fa fa-pencil"></i> Revisi</span>`;
                         actionHtml +=
                             `<i class="fa fa-eye text-primary fa-md btn-view-sph"
@@ -434,8 +450,8 @@ use App\Helpers\PermissionHelper;
                             style="cursor:pointer;font-size:1.25em;"></i><span class="text-danger fw-bold ms-1" style="font-size:0.8em;">Cancel</span>`;
                         break;
                     case 3:
-                        statusHtml = `<span class="badge bg-danger badge-status-remark"
-                            data-sph-id="${item.id}" style="cursor:pointer;">Reject</span>`;
+                        statusHtml = `<span class="badge ${badgeClass} badge-status-remark"
+                            data-sph-id="${item.id}" style="cursor:pointer;">${statusLabel}</span>`;
                         actionHtml +=
                             `<i class="fa fa-eye text-primary fa-md btn-view-sph"
                                 title="Lihat Detail"
@@ -447,8 +463,8 @@ use App\Helpers\PermissionHelper;
                             style="cursor:pointer;font-size:1.25em;"></i> <span class="text-danger fw-bold ms-1" style="font-size:1em;">Cancel</span>`;
                         break;
                     case 4:
-                        statusHtml = `<span class="badge bg-success badge-status-remark"
-                            data-sph-id="${item.id}" style="cursor:pointer;">Approved</span>`;
+                        statusHtml = `<span class="badge ${badgeClass} badge-status-remark"
+                            data-sph-id="${item.id}" style="cursor:pointer;">${statusLabel}</span>`;
                         // View button available on approved too
                         actionHtml += `<i class="fa fa-eye text-primary fa-md btn-view-sph"
                                 title="Lihat Detail"
@@ -470,16 +486,18 @@ use App\Helpers\PermissionHelper;
                                 style="cursor:pointer;font-size:1.25em;"></i>&nbsp;&nbsp;`;
                         @endif
 
-                        // Check permission for Add GR button
-                        @if(PermissionHelper::hasActionAccess('sph.menu', 'sph.o.act.gr', 'sph.o.menu'))
-                        actionHtml += `<i class="fa fa-plus-circle text-success fa-md btn-add-gr"
-                                title="Tambahkan ke Good Receipt"
-                                data-sph-id="${item.id}"
-                                style="cursor:pointer;font-size:1.25em;"></i>&nbsp;&nbsp;`;
-                        @endif
+                        // Check permission for Add GR button - HIDDEN
+                        // @if(PermissionHelper::hasActionAccess('sph.menu', 'sph.o.act.gr', 'sph.o.menu'))
+                        // actionHtml += `<i class="fa fa-plus-circle text-success fa-md btn-add-gr"
+                        //         title="Tambahkan ke Good Receipt"
+                        //         data-sph-id="${item.id}"
+                        //         style="cursor:pointer;font-size:1.25em;"></i>&nbsp;&nbsp;`;
+                        // @endif
                         break;
                     default:
-                        statusHtml = item.status;
+                        // Fallback: use status_label from API or statusMap, otherwise show Unknown
+                        statusHtml = `<span class="badge ${badgeClass} badge-status-remark"
+                            data-sph-id="${item.id}" style="cursor:pointer;">${statusLabel}</span>`;
                 }
                 return [
                     item.tipe_sph||'',
