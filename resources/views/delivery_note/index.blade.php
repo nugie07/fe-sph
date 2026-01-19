@@ -285,6 +285,39 @@
     </div>
 </div>
 
+{{-- Modal untuk preview DN File --}}
+<div class="modal fade" id="modal-dn-file-preview" tabindex="-1" aria-labelledby="modalDnFilePreviewLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalDnFilePreviewLabel">Preview DN File</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="height: 80vh;">
+                <iframe id="dn-file-iframe" src="" frameborder="0" width="100%" height="100%" style="border: none;"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Modal untuk hasil recreate --}}
+<div class="modal fade" id="modal-recreate-result" tabindex="-1" aria-labelledby="modalRecreateResultLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalRecreateResultLabel">Hasil Recreate DN File</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="recreate-result-content"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div id="overlay-loading-dn" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:2000;background:rgba(255,255,255,0.8);align-items:center;justify-content:center;">
   <div style="text-align:center;">
     <div class="spinner-border text-primary mb-3" style="width:3rem;height:3rem;"></div>
@@ -461,11 +494,20 @@ $(document).ready(function() {
           pdfButton = `<span class="badge rounded p-2 bg-info btn-pdf" style="cursor:pointer;" data-id="${row.id}" title="Download PDF"><i class="fa fa-file-pdf-o"></i></span>`;
         }
 
+        // Icon untuk dn_file: download jika ada, refresh jika null
+        let dnFileButton = '';
+        if (row.dn_file) {
+          dnFileButton = `<span class="badge rounded p-2 bg-success btn-dn-file" style="cursor:pointer;" data-id="${row.id}" data-url="${row.dn_file}" title="Preview DN File"><i class="fa fa-download"></i></span>`;
+        } else {
+          dnFileButton = `<span class="badge rounded p-2 bg-secondary btn-recreate-dn" style="cursor:pointer;" data-id="${row.id}" title="Recreate DN File"><i class="fa fa-refresh"></i></span>`;
+        }
+
         return `
           <div class="d-flex justify-content-center gap-2">
             <span class="badge rounded p-2 bg-primary btn-view" style="cursor:pointer;" data-id="${row.id}" title="View"><i class="fa fa-eye"></i></span>
             ${editButton}
             ${pdfButton}
+            ${dnFileButton}
             <span class="badge rounded p-2 bg-danger btn-delete" style="cursor:pointer;" data-id="${row.id}" title="Delete"><i class="fa fa-trash"></i></span>
           </div>
         `;
@@ -492,6 +534,8 @@ $(document).ready(function() {
   deliveryNoteModal = new bootstrap.Modal(document.getElementById('modal-delivery-note'), {});
   bastUploadModal = new bootstrap.Modal(document.getElementById('modal-upload-bast'), {});
   pdfPreviewModal = new bootstrap.Modal(document.getElementById('modal-pdf-preview'), {});
+  let dnFilePreviewModal = new bootstrap.Modal(document.getElementById('modal-dn-file-preview'), {});
+  let recreateResultModal = new bootstrap.Modal(document.getElementById('modal-recreate-result'), {});
 
   // Select2 for DN No
   $('#dn_no').select2({
@@ -703,6 +747,122 @@ $(document).ready(function() {
     }
   });
 
+  // DN File button - Preview jika ada file
+  $('#basic-1 tbody').on('click', '.btn-dn-file', function(){
+    const id = $(this).data('id');
+    const fileUrl = $(this).data('url');
+    if (fileUrl) {
+      // Check if fileUrl already contains full URL
+      let fullUrl;
+      if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
+        fullUrl = fileUrl;
+      } else {
+        const baseUrl = 'https://is3.cloudhost.id/bensinkustorage/';
+        fullUrl = baseUrl + fileUrl;
+      }
+      $('#modalDnFilePreviewLabel').text('Preview DN File');
+      $('#dn-file-iframe').attr('src', fullUrl);
+      dnFilePreviewModal.show();
+    } else {
+      showToast('File DN tidak ditemukan', 'error');
+    }
+  });
+
+  // Recreate DN File button - Recreate jika file null
+  $('#basic-1 tbody').on('click', '.btn-recreate-dn', function(){
+    const id = $(this).data('id');
+    if (!id) {
+      showToast('ID Delivery Note tidak ditemukan', 'error');
+      return;
+    }
+
+    // Tampilkan loading
+    $('#recreate-result-content').html('<div class="text-center"><div class="spinner-border text-primary mb-3"></div><p>Sedang memproses recreate DN File...</p></div>');
+    recreateResultModal.show();
+
+    // Hit API recreate
+    $.ajax({
+      url: '/api/delivery-note/recreate',
+      type: 'POST',
+      data: JSON.stringify({ id: id }),
+      contentType: 'application/json',
+      headers: {
+        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+      },
+      success: function(response) {
+        let content = '';
+        if (response.success) {
+          content = `
+            <div class="alert alert-success">
+              <h5><i class="fa fa-check-circle"></i> Berhasil</h5>
+              <p>${response.message || 'PDF Delivery Note berhasil di-generate ulang'}</p>
+              ${response.data ? `
+                <hr>
+                <div class="mt-3">
+                  <p><strong>DN No:</strong> ${response.data.dn_no || '-'}</p>
+                  ${response.data.dn_file ? `<p><strong>File URL:</strong> <a href="${response.data.dn_file}" target="_blank">${response.data.dn_file}</a></p>` : ''}
+                  ${response.data.missing_fields && response.data.missing_fields.length > 0 ? `
+                    <p><strong>Missing Fields:</strong></p>
+                    <ul>
+                      ${response.data.missing_fields.map(field => `<li>${field}</li>`).join('')}
+                    </ul>
+                  ` : ''}
+                </div>
+              ` : ''}
+            </div>
+          `;
+          // Reload table untuk update status dn_file
+          reloadDeliveryNoteTable();
+        } else {
+          content = `
+            <div class="alert alert-danger">
+              <h5><i class="fa fa-exclamation-circle"></i> Gagal</h5>
+              <p>${response.message || 'Gagal melakukan recreate DN File'}</p>
+              ${response.errors ? `
+                <hr>
+                <div class="mt-3">
+                  <p><strong>Error Details:</strong></p>
+                  <ul>
+                    ${Object.keys(response.errors).map(key => 
+                      `<li><strong>${key}:</strong> ${Array.isArray(response.errors[key]) ? response.errors[key].join(', ') : response.errors[key]}</li>`
+                    ).join('')}
+                  </ul>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        }
+        $('#recreate-result-content').html(content);
+      },
+      error: function(xhr) {
+        let errorMsg = 'Gagal melakukan recreate DN File';
+        if (xhr.responseJSON && xhr.responseJSON.message) {
+          errorMsg = xhr.responseJSON.message;
+        } else if (xhr.responseJSON && xhr.responseJSON.errors) {
+          const errors = xhr.responseJSON.errors;
+          errorMsg = Object.values(errors).flat().join(', ');
+        }
+        $('#recreate-result-content').html(`
+          <div class="alert alert-danger">
+            <h5><i class="fa fa-exclamation-circle"></i> Error</h5>
+            <p>${errorMsg}</p>
+            ${xhr.responseJSON && xhr.responseJSON.errors ? `
+              <hr>
+              <div class="mt-3">
+                <p><strong>Error Details:</strong></p>
+                <ul>
+                  ${Object.keys(xhr.responseJSON.errors).map(key => 
+                    `<li><strong>${key}:</strong> ${Array.isArray(xhr.responseJSON.errors[key]) ? xhr.responseJSON.errors[key].join(', ') : xhr.responseJSON.errors[key]}</li>`
+                  ).join('')}
+                </ul>
+              </div>
+            ` : ''}
+          </div>
+        `);
+      }
+    });
+  });
+
 
 
   // Event handler untuk form upload BAST
@@ -802,6 +962,16 @@ $(document).ready(function() {
   // Reset modal PDF saat ditutup
   $('#modal-pdf-preview').on('hidden.bs.modal', function(){
     $('#pdf-iframe').attr('src', '');
+  });
+
+  // Reset modal DN File Preview saat ditutup
+  $('#modal-dn-file-preview').on('hidden.bs.modal', function(){
+    $('#dn-file-iframe').attr('src', '');
+  });
+
+  // Reset modal Recreate Result saat ditutup
+  $('#modal-recreate-result').on('hidden.bs.modal', function(){
+    $('#recreate-result-content').html('');
   });
 
 

@@ -42,6 +42,12 @@
 .bulk-row-status.processing { color: #0d6efd; }
 .bulk-row-status.success { color: #198754; }
 .bulk-row-status.error { color: #dc3545; }
+.row-flex {
+  display: flex;
+  flex-wrap: wrap;
+  margin-right: -15px;
+  margin-left: -15px;
+}
 </style>
 @endsection
 
@@ -149,51 +155,63 @@
             </div>
             <div class="col-md-3 mb-3">
               <label class="form-label fw-bold small">HSD Solar <span class="text-danger">*</span></label>
-              <input type="text" id="tambah-po-hsd-solar" name="hsd_solar" class="form-control currency-input" required placeholder="Rp 0">
+              <input type="text" id="tambah-po-hsd-solar" name="hsd_solar" class="form-control" required placeholder="Rp 0 atau 0,00">
             </div>
             <div class="col-md-3 mb-3">
               <label class="form-label fw-bold small">Ongkos Angkut</label>
-              <input type="text" id="tambah-po-ongkos-angkut" name="ongkos_angkut" class="form-control currency-input" placeholder="Rp 0">
+              <input type="text" id="tambah-po-ongkos-angkut" name="ongkos_angkut" class="form-control" placeholder="Rp 0 atau 0,00">
+              <div class="form-check mt-2">
+                <input class="form-check-input" type="checkbox" id="tambah-po-include-ppn" name="include_ppn" value="1">
+                <label class="form-check-label fw-bold small" for="tambah-po-include-ppn">Include PPN</label>
+              </div>
             </div>
           </div>
-          <div class="row">
-            <div class="col-md-6 mb-3">
+          <div class="row-flex">
+            <div class="mb-3" style="flex: 0 0 40%; padding-right: 15px;">
               <label class="form-label fw-bold small">Sub Total</label>
               <input type="text" id="tambah-po-subtotal" class="form-control" readonly style="background-color:#f8f9fa;">
             </div>
-            <div class="col-md-6 mb-3">
+            <div class="mb-3" style="flex: 0 0 30%; padding-right: 15px;">
               <label class="form-label fw-bold small">PPN 11%</label>
               <input type="text" id="tambah-po-ppn" class="form-control" readonly style="background-color:#f8f9fa;">
             </div>
-          </div>
-          <div class="row">
-            <div class="col-md-4 mb-3">
+            <div class="mb-3" style="flex: 0 0 30%; padding-right: 15px;">
               <label class="form-label fw-bold small">PBBKB</label>
-              <input type="text" id="tambah-po-pbbkb" name="pbbkb" class="form-control currency-input" placeholder="Rp 0" value="Rp 0">
-            </div>
-            <div class="col-md-4 mb-3">
-              <label class="form-label fw-bold small">PPH 23</label>
-              <input type="text" id="tambah-po-pph" name="pph" class="form-control currency-input" placeholder="Rp 0" value="Rp 0">
-            </div>
-            <div class="col-md-4 mb-3">
-              <label class="form-label fw-bold small">Transport</label>
-              <input type="text" id="tambah-po-transport" name="transport" class="form-control currency-input" placeholder="Rp 0" value="Rp 0">
+              <input type="text" id="tambah-po-pbbkb" name="pbbkb" class="form-control currency-input" placeholder="Rp 0">
+              <div class="mt-2">
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="radio" name="pbbkb_percentage" id="tambah-po-pbbkb-75" value="7.5">
+                  <label class="form-check-label" for="tambah-po-pbbkb-75">7.5%</label>
+                </div>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="radio" name="pbbkb_percentage" id="tambah-po-pbbkb-10" value="10">
+                  <label class="form-check-label" for="tambah-po-pbbkb-10">10%</label>
+                </div>
+              </div>
             </div>
           </div>
-          <div class="row">
-            <div class="col-md-6 mb-3">
+          <div class="row-flex">
+            <div class="mb-3" style="flex: 0 0 40%; padding-right: 15px;">
+              <label class="form-label fw-bold small">PPH 23</label>
+              <input type="text" id="tambah-po-pph" name="pph" class="form-control currency-input" placeholder="Rp 0">
+            </div>
+            <div class="mb-3" style="flex: 0 0 60%; padding-right: 15px;">
               <label class="form-label fw-bold small">Total</label>
               <input type="text" id="tambah-po-total" class="form-control fw-bold" readonly style="background-color:#f8f9fa; font-size:16px;">
               <div class="mt-2 small">Terbilang: <span id="tambah-po-terbilang" class="text-primary fw-bold"></span></div>
             </div>
+          </div>
+          <div class="row">
             <div class="col-md-6 mb-3">
               <label class="form-label fw-bold small">Upload File PO <span class="text-danger">*</span></label>
               <input type="file" id="tambah-po-file" name="file_po" class="form-control" accept=".pdf,.doc,.docx" required>
             </div>
-          </div>
-          <div class="form-check mt-2">
+            <div class="col-md-6 mb-3 d-flex align-items-end">
+              <div class="form-check">
                 <input class="form-check-input" type="checkbox" id="tambah-po-bypass" name="bypass" value="1">
-            <label class="form-check-label fw-bold" for="tambah-po-bypass">Bypass</label>
+                <label class="form-check-label fw-bold" for="tambah-po-bypass">Bypass</label>
+              </div>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
@@ -546,26 +564,69 @@ function renderFileBtn(item) {
     // ==========================================
     function formatRupiah(x){ return 'Rp ' + (parseFloat(x)||0).toLocaleString('id-ID',{ minimumFractionDigits:2 }); }
     function parseCurrencyValue(v){ return parseFloat(v.replace(/[^\d]/g, '')) || 0; }
+    function parseCurrencyValueDecimal(v){ 
+        if (!v || v.trim() === '') return 0;
+        // Remove Rp, spaces, and keep numbers, comma, and dot
+        var cleaned = v.toString().replace(/[^\d,.]/g, '');
+        // Ganti titik (pemisah ribuan) dengan kosong, koma (desimal) dengan titik
+        var normalized = cleaned.replace(/\./g, '').replace(',', '.');
+        return parseFloat(normalized) || 0; 
+    }
+    function formatCurrencyDecimal(num) {
+        if (!num && num !== 0) return '';
+        // Format dengan 2 desimal menggunakan toLocaleString
+        return 'Rp ' + num.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
     
     // Function to calculate totals for Tambah PO
     function calculateTambahPOTotal() {
         var qty = parseFloat($('#tambah-po-qty').val()) || 0;
-        var hsdSolar = parseCurrencyValue($('#tambah-po-hsd-solar').val());
-        var ongkosAngkut = parseCurrencyValue($('#tambah-po-ongkos-angkut').val());
+        var hsdSolar = parseCurrencyValueDecimal($('#tambah-po-hsd-solar').val());
+        var ongkosAngkutRaw = $('#tambah-po-ongkos-angkut').val() || '';
+        var ongkosAngkut = parseCurrencyValueDecimal(ongkosAngkutRaw);
+        var includePpn = $('#tambah-po-include-ppn').is(':checked');
         
         // Sub Total = (Qty × HSD Solar) + (Qty × Ongkos Angkut)
-        var subtotal = (qty * hsdSolar) + (qty * ongkosAngkut);
+        // Ensure both values are numbers
+        var hsdTotal = qty * (hsdSolar || 0);
+        var ongkosTotal = qty * (ongkosAngkut || 0);
+        var subtotal = hsdTotal + ongkosTotal;
         
-        // PPN 11% = Sub Total × 0.11
-        var ppn = subtotal * 0.11;
+        // PPN calculation based on Include PPN checkbox
+        var ppn;
+        if (includePpn) {
+            // PPN = ((QTY * HSD SOLAR) + (QTY * ONGKOS ANGKUT)) * 11%
+            ppn = subtotal * 0.11;
+        } else {
+            // PPN = (QTY * HSD SOLAR) * 11%
+            ppn = (qty * hsdSolar) * 0.11;
+        }
         
-        // Get additional costs
+        // PBBKB calculation - check if manually entered or use radio button
         var pbbkb = parseCurrencyValue($('#tambah-po-pbbkb').val()) || 0;
-        var pph = parseCurrencyValue($('#tambah-po-pph').val()) || 0;
-        var transport = parseCurrencyValue($('#tambah-po-transport').val()) || 0;
+        var pbbkbPercentage = $('input[name="pbbkb_percentage"]:checked').val();
+        var pbbkbFieldValue = $('#tambah-po-pbbkb').val().trim();
         
-        // Total = Sub Total + PPN + PBBKB + PPH + Transport
-        var total = subtotal + ppn + pbbkb + pph + transport;
+        // If radio button is selected and field is empty or zero, auto calculate
+        if (pbbkbPercentage && (!pbbkbFieldValue || pbbkbFieldValue === 'Rp 0' || pbbkbFieldValue === 'Rp 0,00')) {
+            pbbkb = (parseFloat(pbbkbPercentage) / 100) * (qty * hsdSolar);
+            $('#tambah-po-pbbkb').val(formatRupiah(pbbkb));
+        }
+        
+        // PPH 23 calculation - check if manually entered or auto calculate
+        var pph = parseCurrencyValue($('#tambah-po-pph').val()) || 0;
+        var pphFieldValue = $('#tambah-po-pph').val().trim();
+        
+        // Auto calculate PPH 23 only if Include PPN is NOT checked and field is empty/zero
+        if (!includePpn && (!pphFieldValue || pphFieldValue === 'Rp 0' || pphFieldValue === 'Rp 0,00')) {
+            pph = 0.02 * (ongkosAngkut * qty);
+            if (pph > 0) {
+                $('#tambah-po-pph').val(formatRupiah(pph));
+            }
+        }
+        
+        // Total = Sub Total + PPN + PBBKB + PPH
+        var total = subtotal + ppn + pbbkb + pph;
         
         // Update fields
         $('#tambah-po-subtotal').val(formatRupiah(subtotal));
@@ -601,9 +662,58 @@ function renderFileBtn(item) {
         return toTerbilang(n).trim() + ' rupiah';
     }
     
+    // Event handler untuk HSD Solar dan Ongkos Angkut - biarkan user mengetik bebas, format hanya saat blur
+    $(document).on('blur', '#tambah-po-hsd-solar, #tambah-po-ongkos-angkut', function(){
+        var $this = $(this);
+        var value = $this.val();
+        
+        if (!value || value.trim() === '') {
+            $this.val('');
+            return;
+        }
+        
+        // Hapus Rp dan spasi, biarkan angka, titik, dan koma
+        var cleaned = value.replace(/[^\d,.]/g, '');
+        
+        // Normalisasi: ganti koma dengan titik untuk parsing
+        var normalized = cleaned.replace(/\./g, '').replace(',', '.');
+        
+        // Validasi: hanya boleh ada satu titik (desimal)
+        var parts = normalized.split('.');
+        if (parts.length > 2) {
+            normalized = parts[0] + '.' + parts.slice(1).join('');
+            parts = normalized.split('.');
+        }
+        
+        // Batasi desimal maksimal 2 angka
+        if (parts.length === 2 && parts[1].length > 2) {
+            normalized = parts[0] + '.' + parts[1].substring(0, 2);
+        }
+        
+        var num = parseFloat(normalized) || 0;
+        
+        // Format dengan desimal
+        var formatted = formatCurrencyDecimal(num);
+        $this.val(formatted);
+        
+        calculateTambahPOTotal();
+    });
+    
+    // Trigger calculation saat input (tanpa formatting)
+    $(document).on('input', '#tambah-po-hsd-solar, #tambah-po-ongkos-angkut', function(){
+        calculateTambahPOTotal();
+    });
+    
     // Event handler for currency input (using event delegation for dynamic elements)
     $(document).on('input', '.currency-input', function(){
         var $this = $(this);
+        var fieldId = $this.attr('id');
+        
+        // Skip HSD Solar dan Ongkos Angkut karena sudah dihandle di atas
+        if (fieldId === 'tambah-po-hsd-solar' || fieldId === 'tambah-po-ongkos-angkut') {
+            return;
+        }
+        
         var cursorPos = this.selectionStart;
         var oldValue = $this.val();
         var num = oldValue.toString().replace(/[^\d]/g, '');
@@ -620,11 +730,7 @@ function renderFileBtn(item) {
         }
         
         // Trigger calculation for Tambah PO form
-        if ($this.attr('id') === 'tambah-po-hsd-solar' || 
-            $this.attr('id') === 'tambah-po-ongkos-angkut' ||
-            $this.attr('id') === 'tambah-po-pbbkb' ||
-            $this.attr('id') === 'tambah-po-pph' ||
-            $this.attr('id') === 'tambah-po-transport') {
+        if (fieldId === 'tambah-po-pbbkb' || fieldId === 'tambah-po-pph') {
             calculateTambahPOTotal();
         }
     });
@@ -678,8 +784,50 @@ function renderFileBtn(item) {
             autoClose: true
         });
         
-        // Setup direct event handlers for calculation (after modal is shown)
-        $('#tambah-po-hsd-solar, #tambah-po-ongkos-angkut, #tambah-po-pbbkb, #tambah-po-pph, #tambah-po-transport').off('input').on('input', function(){
+        // Setup event handlers for HSD Solar and Ongkos Angkut - format hanya saat blur
+        $('#tambah-po-hsd-solar, #tambah-po-ongkos-angkut').off('blur').on('blur', function(){
+            var $this = $(this);
+            var value = $this.val();
+            
+            if (!value || value.trim() === '') {
+                $this.val('');
+                return;
+            }
+            
+            // Hapus Rp dan spasi, biarkan angka, titik, dan koma
+            var cleaned = value.replace(/[^\d,.]/g, '');
+            
+            // Normalisasi: ganti koma dengan titik untuk parsing
+            var normalized = cleaned.replace(/\./g, '').replace(',', '.');
+            
+            // Validasi: hanya boleh ada satu titik (desimal)
+            var parts = normalized.split('.');
+            if (parts.length > 2) {
+                normalized = parts[0] + '.' + parts.slice(1).join('');
+                parts = normalized.split('.');
+            }
+            
+            // Batasi desimal maksimal 2 angka
+            if (parts.length === 2 && parts[1].length > 2) {
+                normalized = parts[0] + '.' + parts[1].substring(0, 2);
+            }
+            
+            var num = parseFloat(normalized) || 0;
+            
+            // Format dengan desimal
+            var formatted = formatCurrencyDecimal(num);
+            $this.val(formatted);
+            
+            calculateTambahPOTotal();
+        });
+        
+        // Trigger calculation saat input (tanpa formatting)
+        $('#tambah-po-hsd-solar, #tambah-po-ongkos-angkut').off('input').on('input', function(){
+            calculateTambahPOTotal();
+        });
+        
+        // Setup direct event handlers for PBBKB and PPH (regular currency)
+        $('#tambah-po-pbbkb, #tambah-po-pph').off('input').on('input', function(){
             var $this = $(this);
             var cursorPos = this.selectionStart;
             var oldValue = $this.val();
@@ -707,6 +855,22 @@ function renderFileBtn(item) {
             calculateTambahPOTotal();
         });
         
+        // Event handler for Include PPN checkbox
+        $('#tambah-po-include-ppn').off('change').on('change', function(){
+            // Reset PPH if Include PPN is checked
+            if ($(this).is(':checked')) {
+                $('#tambah-po-pph').val('');
+            }
+            calculateTambahPOTotal();
+        });
+        
+        // Event handler for PBBKB radio buttons
+        $('input[name="pbbkb_percentage"]').off('change').on('change', function(){
+            // Clear manual input when radio is selected to trigger auto calculation
+            $('#tambah-po-pbbkb').val('');
+            calculateTambahPOTotal();
+        });
+        
         // Calculate if there are existing values
         setTimeout(function() {
             calculateTambahPOTotal();
@@ -718,11 +882,12 @@ function renderFileBtn(item) {
         $('#formTambahPO')[0].reset();
         $('#tambah-po-subtotal').val('');
         $('#tambah-po-ppn').val('');
-        $('#tambah-po-pbbkb').val('Rp 0');
-        $('#tambah-po-pph').val('Rp 0');
-        $('#tambah-po-transport').val('Rp 0');
+        $('#tambah-po-pbbkb').val('');
+        $('#tambah-po-pph').val('');
         $('#tambah-po-total').val('');
         $('#tambah-po-terbilang').text('');
+        $('#tambah-po-include-ppn').prop('checked', false);
+        $('input[name="pbbkb_percentage"]').prop('checked', false);
         if ($('#tambah-po-sph').hasClass('select2-hidden-accessible')) {
             $('#tambah-po-sph').val(null).trigger('change');
         }
@@ -772,11 +937,12 @@ function renderFileBtn(item) {
                 $('#tambah-po-seq').val('');
                 $('#tambah-po-subtotal').val('');
                 $('#tambah-po-ppn').val('');
-                $('#tambah-po-pbbkb').val('Rp 0');
-                $('#tambah-po-pph').val('Rp 0');
-                $('#tambah-po-transport').val('Rp 0');
+                $('#tambah-po-pbbkb').val('');
+                $('#tambah-po-pph').val('');
                 $('#tambah-po-total').val('');
                 $('#tambah-po-terbilang').text('');
+                $('#tambah-po-include-ppn').prop('checked', false);
+                $('input[name="pbbkb_percentage"]').prop('checked', false);
                 $('#tambah-po-bypass').prop('checked', false);
                 Swal.fire('Berhasil!', 'Form telah direset', 'success');
             }
@@ -793,14 +959,21 @@ function renderFileBtn(item) {
         var formData = new FormData(this);
         
         // Convert currency values to numbers
-        formData.set('hsd_solar', parseCurrencyValue($('#tambah-po-hsd-solar').val()));
-        formData.set('ongkos_angkut', parseCurrencyValue($('#tambah-po-ongkos-angkut').val()) || 0);
+        var includePpn = $('#tambah-po-include-ppn').is(':checked');
+        var ongkosAngkutValue = parseCurrencyValueDecimal($('#tambah-po-ongkos-angkut').val()) || 0;
+        
+        formData.set('hsd_solar', parseCurrencyValueDecimal($('#tambah-po-hsd-solar').val()));
+        // Ongkos Angkut: jika Include PPN unchecked, set ke 0, jika checked gunakan nilai dari field
+        formData.set('ongkos_angkut', includePpn ? ongkosAngkutValue : 0);
         formData.set('subtotal', parseCurrencyValue($('#tambah-po-subtotal').val()));
         formData.set('ppn', parseCurrencyValue($('#tambah-po-ppn').val()));
         formData.set('pbbkb', parseCurrencyValue($('#tambah-po-pbbkb').val()) || 0);
         formData.set('pph', parseCurrencyValue($('#tambah-po-pph').val()) || 0);
-        formData.set('transport', parseCurrencyValue($('#tambah-po-transport').val()) || 0);
+        // Transport: 0 if Include PPN is checked, otherwise use Ongkos Angkut value
+        formData.set('transport', includePpn ? 0 : ongkosAngkutValue);
         formData.set('total', parseCurrencyValue($('#tambah-po-total').val()));
+        formData.set('include_ppn', includePpn ? '1' : '0');
+        formData.set('pbbkb_percentage', $('input[name="pbbkb_percentage"]:checked').val() || '');
         formData.set('no_seq', $('#tambah-po-seq').val().trim());
         formData.set('wilayah', $('#tambah-po-wilayah').val());
         formData.set('sph_id', $('#tambah-po-sph').val());

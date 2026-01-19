@@ -286,9 +286,11 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="second_appr" class="form-label">Approval Kedua</label>
-                                <select class="form-control" id="second_appr" name="second_appr" required>
+                                <select class="form-control" id="second_appr" name="second_appr">
                                     <option value="">-- Pilih Approval Kedua --</option>
+                                    <option value="null">Null</option>
                                 </select>
+                                <small class="text-muted">Approval Kedua bersifat opsional, dapat dipilih Null</small>
                             </div>
                         </div>
                     </div>
@@ -515,6 +517,9 @@
                             // Clear existing options
                             firstApprSelect.empty().append('<option value="">-- Pilih Approval Pertama --</option>');
                             secondApprSelect.empty().append('<option value="">-- Pilih Approval Kedua --</option>');
+                            
+                            // Add "Null" option for Approval Kedua
+                            secondApprSelect.append('<option value="null">Null</option>');
 
                             // Add options
                             response.data.forEach(role => {
@@ -553,7 +558,13 @@
                 loadRolesDropdown().then(() => {
                     // Set dropdown values after they are loaded
                     $('#first_appr').val(firstApprValue);
-                    $('#second_appr').val(secondApprValue);
+                    
+                    // Handle null value for Approval Kedua
+                    if (secondApprValue === null || secondApprValue === '' || secondApprValue === 'null') {
+                        $('#second_appr').val('null');
+                    } else {
+                        $('#second_appr').val(secondApprValue);
+                    }
 
                     // Trigger change event to update Select2 display
                     $('#first_appr').trigger('change');
@@ -580,10 +591,23 @@
             $spinner.removeClass('d-none');
             $btnText.text('Saving...');
 
+            // Get form values
+            const firstAppr = $('#first_appr').val();
+            const secondAppr = $('#second_appr').val();
+            
+            // Validate Approval Pertama is required
+            if (!firstAppr || firstAppr === '') {
+                Swal.fire('Error!', 'Approval Pertama harus diisi', 'error');
+                $btn.prop('disabled', false);
+                $spinner.addClass('d-none');
+                $btnText.text('Save');
+                return;
+            }
+            
             const formData = {
                 tipe_trx: $('#tipe_trx').val(),
-                first_appr: $('#first_appr').val(),
-                second_appr: $('#second_appr').val()
+                first_appr: firstAppr,
+                second_appr: (secondAppr === 'null' || secondAppr === '') ? null : secondAppr
             };
 
             const workflowId = $('#workflow_id').val();
