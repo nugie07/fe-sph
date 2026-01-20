@@ -613,15 +613,37 @@ function renderFileBtn(item) {
             $('#tambah-po-pbbkb').val(formatRupiah(pbbkb));
         }
         
-        // PPH 23 calculation - check if manually entered or auto calculate
-        var pph = parseCurrencyValue($('#tambah-po-pph').val()) || 0;
+        // PPH 23 calculation
         var pphFieldValue = $('#tambah-po-pph').val().trim();
+        var pph = parseCurrencyValue(pphFieldValue) || 0;
+        var pphCalculated = 0.02 * (ongkosAngkut * qty);
+        var pphManuallyEdited = $('#tambah-po-pph').data('manually-edited') || false;
         
-        // Auto calculate PPH 23 only if Include PPN is NOT checked and field is empty/zero
-        if (!includePpn && (!pphFieldValue || pphFieldValue === 'Rp 0' || pphFieldValue === 'Rp 0,00')) {
-            pph = 0.02 * (ongkosAngkut * qty);
-            if (pph > 0) {
+        // Logika PPH 23:
+        // - Jika Include PPN checked: auto calculate PPH = 2% * (Ongkos Angkut * QTY), tapi bisa di-edit (termasuk set ke 0)
+        // - Jika Include PPN unchecked: PPH = 0 (default), tapi bisa di-edit
+        if (includePpn) {
+            // Include PPN checked: auto calculate PPH = 2% * (Ongkos Angkut * QTY)
+            // Auto calculate jika belum pernah di-edit manual
+            if (!pphManuallyEdited) {
+                // Auto calculate PPH
+                pph = pphCalculated;
                 $('#tambah-po-pph').val(formatRupiah(pph));
+            } else {
+                // User sudah mengedit manual, gunakan nilai yang sudah diisi (termasuk jika user set ke 0)
+                pph = parseCurrencyValue(pphFieldValue) || 0;
+            }
+        } else {
+            // Include PPN unchecked: default PPH = 0, tapi bisa di-edit
+            // Hanya set ke 0 jika field benar-benar kosong (belum di-edit user)
+            if (!pphFieldValue) {
+                pph = 0;
+                $('#tambah-po-pph').val('Rp 0,00');
+                // Reset flag saat unchecked
+                $('#tambah-po-pph').data('manually-edited', false);
+            } else {
+                // Gunakan nilai yang sudah diisi user (manual)
+                pph = parseCurrencyValue(pphFieldValue) || 0;
             }
         }
         
@@ -712,6 +734,11 @@ function renderFileBtn(item) {
         // Skip HSD Solar dan Ongkos Angkut karena sudah dihandle di atas
         if (fieldId === 'tambah-po-hsd-solar' || fieldId === 'tambah-po-ongkos-angkut') {
             return;
+        }
+        
+        // Track manual edit untuk PPH
+        if (fieldId === 'tambah-po-pph') {
+            $this.data('manually-edited', true);
         }
         
         var cursorPos = this.selectionStart;
@@ -829,9 +856,15 @@ function renderFileBtn(item) {
         // Setup direct event handlers for PBBKB and PPH (regular currency)
         $('#tambah-po-pbbkb, #tambah-po-pph').off('input').on('input', function(){
             var $this = $(this);
+            var fieldId = $this.attr('id');
             var cursorPos = this.selectionStart;
             var oldValue = $this.val();
             var num = oldValue.toString().replace(/[^\d]/g, '');
+            
+            // Track manual edit untuk PPH
+            if (fieldId === 'tambah-po-pph') {
+                $this.data('manually-edited', true);
+            }
             
             if (num === '') {
                 $this.val('');
@@ -857,10 +890,26 @@ function renderFileBtn(item) {
         
         // Event handler for Include PPN checkbox
         $('#tambah-po-include-ppn').off('change').on('change', function(){
-            // Reset PPH if Include PPN is checked
-            if ($(this).is(':checked')) {
-                $('#tambah-po-pph').val('');
+            var isChecked = $(this).is(':checked');
+            var pphFieldValue = $('#tambah-po-pph').val().trim();
+            var pphManuallyEdited = $('#tambah-po-pph').data('manually-edited') || false;
+            
+            // Jika Include PPN di-check
+            if (isChecked) {
+                // Reset flag dan clear field jika belum pernah di-edit manual (agar auto calculate bisa jalan)
+                if (!pphManuallyEdited) {
+                    $('#tambah-po-pph').data('manually-edited', false);
+                    $('#tambah-po-pph').val(''); // Clear field agar auto calculate jalan
+                }
+            } else {
+                // Jika Include PPN di-uncheck, reset flag
+                $('#tambah-po-pph').data('manually-edited', false);
+                // Set PPH ke 0 jika belum pernah di-edit manual
+                if (!pphManuallyEdited) {
+                    $('#tambah-po-pph').val('Rp 0,00');
+                }
             }
+            
             calculateTambahPOTotal();
         });
         
@@ -888,6 +937,8 @@ function renderFileBtn(item) {
         $('#tambah-po-terbilang').text('');
         $('#tambah-po-include-ppn').prop('checked', false);
         $('input[name="pbbkb_percentage"]').prop('checked', false);
+        // Reset flag manually-edited untuk PPH
+        $('#tambah-po-pph').data('manually-edited', false);
         if ($('#tambah-po-sph').hasClass('select2-hidden-accessible')) {
             $('#tambah-po-sph').val(null).trigger('change');
         }
@@ -944,6 +995,8 @@ function renderFileBtn(item) {
                 $('#tambah-po-include-ppn').prop('checked', false);
                 $('input[name="pbbkb_percentage"]').prop('checked', false);
                 $('#tambah-po-bypass').prop('checked', false);
+                // Reset flag manually-edited untuk PPH
+                $('#tambah-po-pph').data('manually-edited', false);
                 Swal.fire('Berhasil!', 'Form telah direset', 'success');
             }
         });

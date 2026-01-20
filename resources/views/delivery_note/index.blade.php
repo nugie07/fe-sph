@@ -87,11 +87,15 @@
         <input type="hidden" name="status" id="status" value=0>
         <div class="row g-2">
           <div class="col-md-3 mb-2">
-            <label for="dn_no" class="form-label">DN No</label>
+            <label for="dn_no" class="form-label">Seq No</label>
             <select class="form-select" id="dn_no" name="dn_no" style="width:100%;" required></select>
             <div class="invalid-feedback">Harus diisi</div>
           </div>
-          <div class="col-md-6 mb-2">
+          <div class="col-md-4 mb-2">
+            <label for="dn_no_text" class="form-label">DN No</label>
+            <input type="text" class="form-control" id="dn_no_text" name="dn_no_text">
+          </div>
+          <div class="col-md-5 mb-2">
             <label for="customer_name" class="form-label">Customer Name</label>
             <input type="text" class="form-control readonly-by-default" id="customer_name" name="customer_name" readonly>
           </div>
@@ -116,7 +120,7 @@
           </div>
           <div class="col-md-6 mb-2">
             <label for="delivery_to" class="form-label">Delivery To</label>
-            <input type="text" class="form-control readonly-by-default" id="delivery_to" name="delivery_to" readonly>
+            <input type="text" class="form-control" id="delivery_to" name="delivery_to">
           </div>
           <div class="col-md-12 mb-2">
             <label for="address" class="form-label">Address</label>
@@ -124,7 +128,7 @@
           </div>
           <div class="col-md-3 mb-2">
             <label for="qty" class="form-label">Qty</label>
-            <input type="text" class="form-control readonly-by-default" id="qty" name="qty" readonly>
+            <input type="text" class="form-control" id="qty" name="qty">
           </div>
           <div class="col-md-3 mb-2">
             <label for="unit" class="form-label">Unit</label>
@@ -141,23 +145,19 @@
           </div>
           <div class="col-md-3 mb-2">
             <label for="so" class="form-label">SO</label>
-            <input type="number" class="form-control" id="so" name="so" required>
-            <div class="invalid-feedback">Harus diisi</div>
+            <input type="number" class="form-control" id="so" name="so">
           </div>
           <div class="col-md-3 mb-2">
             <label for="terra" class="form-label">Terra</label>
-            <input type="text" class="form-control" id="terra" name="terra" required>
-            <div class="invalid-feedback">Harus diisi</div>
+            <input type="text" class="form-control" id="terra" name="terra">
           </div>
           <div class="col-md-3 mb-2">
             <label for="segel_atas" class="form-label">Segel Atas</label>
-            <input type="text" class="form-control" id="segel_atas" name="segel_atas" required>
-            <div class="invalid-feedback">Harus diisi</div>
+            <input type="text" class="form-control" id="segel_atas" name="segel_atas">
           </div>
           <div class="col-md-3 mb-2">
             <label for="segel_bawah" class="form-label">Segel Bawah</label>
-            <input type="text" class="form-control" id="segel_bawah" name="segel_bawah" required>
-            <div class="invalid-feedback">Harus diisi</div>
+            <input type="text" class="form-control" id="segel_bawah" name="segel_bawah">
           </div>
           <div class="col-md-3 mb-2">
             <label for="nopol" class="form-label">NoPol</label>
@@ -574,6 +574,12 @@ $(document).ready(function() {
     $('#customer_po').val(dn.customer_po || '');
     $('#customer_name').val(dn.customer_name || '');
     $('#po_date').val(dn.po_date || '');
+    
+    // Set Consignee default = customer_name
+    $('#consignee').val(dn.customer_name || '');
+    
+    // Set DN No default = Seq No (value dari select2)
+    $('#dn_no_text').val(dn.dn_no || '');
 
     // Fix Arrival Date - pastikan format valid dan datepicker sudah di-initialize
     if (dn.arrival_date && dn.arrival_date !== 'NaN-NaN-NaN') {
@@ -621,7 +627,7 @@ $(document).ready(function() {
     console.log('[DEBUG] Select2:clear event triggered');
     e.preventDefault();
     e.stopPropagation();
-    $('#drs_unique,#customer_po,#customer_name,#po_date,#delivery_to,#address,#qty,#description,#transportir').val('');
+    $('#drs_unique,#customer_po,#customer_name,#po_date,#delivery_to,#address,#qty,#description,#transportir,#consignee,#dn_no_text').val('');
     $('#arrival_date').val('');
     var datepicker = $('#arrival_date').datepicker().data('datepicker');
     if(datepicker) {
@@ -671,6 +677,8 @@ $(document).ready(function() {
     $('#drs_unique').val('');
     $('#created_by').val(currentUser || '');
     $('#dn_no').val(null).trigger('change');
+    $('#dn_no_text').val('');
+    $('#consignee').val('');
     setDeliveryNoteFormReadonly(false);
     $('#form-delivery-note .readonly-by-default').prop('readonly', true);
     $('#form-delivery-note [name=drs_unique], #form-delivery-note [name=created_by]').prop('readonly', true);
@@ -1003,7 +1011,8 @@ $(document).ready(function() {
     $('#customer_name').val(row.customer_name||'');
     $('#po_date').val(row.po_date||'');
     $('#arrival_date').val(row.arrival_date||'');
-    $('#consignee').val(row.consignee||'');
+    $('#consignee').val(row.consignee||row.customer_name||'');
+    $('#dn_no_text').val(row.dn_no_text||row.dn_no||'');
     $('#delivery_to').val(row.delivery_to||'');
     $('#address').val(row.address||'');
     $('#qty').val(row.qty||'');
@@ -1096,6 +1105,8 @@ $(document).ready(function() {
     // Reset kolom baru juga
     $('#berat_jenis').val('');
     $('#temperature').val('');
+    $('#dn_no_text').val('');
+    $('#consignee').val('');
   });
   
   // Prevent modal from closing when clicking outside (only if not clicking on select2)
