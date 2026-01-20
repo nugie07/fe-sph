@@ -1,5 +1,9 @@
 <!-- Tab Supplier -->
-<div class="tab-pane fade show active" id="supplier" role="tabpanel" aria-labelledby="supplier-tab">
+@php
+    $isActive = $isActive ?? true;
+    $activeClass = $isActive ? 'show active' : '';
+@endphp
+<div class="tab-pane fade {{ $activeClass }}" id="supplier" role="tabpanel" aria-labelledby="supplier-tab">
     <div class="card">
         <div class="card-header pb-0 d-flex flex-wrap justify-content-between align-items-center">
             <div>

@@ -1,5 +1,9 @@
 <!-- Tab Transportir -->
-<div class="tab-pane fade" id="transportir" role="tabpanel" aria-labelledby="transportir-tab">
+@php
+    $isActive = $isActive ?? false;
+    $activeClass = $isActive ? 'show active' : '';
+@endphp
+<div class="tab-pane fade {{ $activeClass }}" id="transportir" role="tabpanel" aria-labelledby="transportir-tab">
     <div class="card">
         <div class="card-header pb-0 d-flex flex-wrap justify-content-between align-items-center">
             <div>

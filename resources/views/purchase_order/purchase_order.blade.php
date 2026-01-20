@@ -1,5 +1,13 @@
 @extends('layout.master')
 
+@php
+use App\Helpers\PermissionHelper;
+// Check permission for tab access
+// Permission structure: fin.menu -> fin.po.menu._actions -> fin.po.tab.supplier/transportir
+$hasSupplierAccess = PermissionHelper::hasActionAccess('fin.menu', 'fin.po.tab.supplier', 'fin.po.menu');
+$hasTransportirAccess = PermissionHelper::hasActionAccess('fin.menu', 'fin.po.tab.transportir', 'fin.po.menu');
+@endphp
+
 @section('css')
 <link rel="stylesheet" type="text/css" href="{{ asset('assets/css/vendors/date-picker.css') }}">
 <link rel="stylesheet" type="text/css" href="{{ asset('assets/css/vendors/owlcarousel.css') }}">
@@ -129,25 +137,52 @@
 </div>
 {{-- Datatable disini --}}
 <div class="col-sm-12">
-    <!-- Tab Navigation -->
-    <ul class="nav nav-tabs" id="poTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="supplier-tab" data-bs-toggle="tab" data-bs-target="#supplier" type="button" role="tab" aria-controls="supplier" aria-selected="true">
-                Supplier
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="transportir-tab" data-bs-toggle="tab" data-bs-target="#transportir" type="button" role="tab" aria-controls="transportir" aria-selected="false">
-                Transportir
-            </button>
-        </li>
-    </ul>
+    @if($hasSupplierAccess || $hasTransportirAccess)
+        @php
+            // Determine which tab should be active
+            // If only supplier has access, supplier is active
+            // If only transportir has access, transportir is active
+            // If both have access, supplier is active by default
+            $supplierActive = $hasSupplierAccess && (!$hasTransportirAccess || ($hasSupplierAccess && $hasTransportirAccess));
+            $transportirActive = $hasTransportirAccess && !$hasSupplierAccess;
+        @endphp
+        
+        <!-- Tab Navigation -->
+        @if($hasSupplierAccess && $hasTransportirAccess)
+            <ul class="nav nav-tabs" id="poTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link {{ $supplierActive ? 'active' : '' }}" id="supplier-tab" data-bs-toggle="tab" data-bs-target="#supplier" type="button" role="tab" aria-controls="supplier" aria-selected="{{ $supplierActive ? 'true' : 'false' }}">
+                        Supplier
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link {{ $transportirActive ? 'active' : '' }}" id="transportir-tab" data-bs-toggle="tab" data-bs-target="#transportir" type="button" role="tab" aria-controls="transportir" aria-selected="{{ $transportirActive ? 'true' : 'false' }}">
+                        Transportir
+                    </button>
+                </li>
+            </ul>
+        @endif
 
-    <!-- Tab Content -->
-    <div class="tab-content" id="poTabsContent">
-        @include('purchase_order.tab.supplier')
-        @include('purchase_order.tab.transportir')
-    </div> {{-- Penutup untuk .tab-content --}}
+        <!-- Tab Content -->
+        <div class="tab-content" id="poTabsContent">
+            @if($hasSupplierAccess)
+                @php
+                    $supplierTabActive = $supplierActive ? 'show active' : '';
+                @endphp
+                @include('purchase_order.tab.supplier', ['isActive' => $supplierActive])
+            @endif
+            @if($hasTransportirAccess)
+                @php
+                    $transportirTabActive = $transportirActive ? 'show active' : '';
+                @endphp
+                @include('purchase_order.tab.transportir', ['isActive' => $transportirActive])
+            @endif
+        </div> {{-- Penutup untuk .tab-content --}}
+    @else
+        <div class="alert alert-warning">
+            <i class="fa fa-exclamation-triangle"></i> Anda tidak memiliki akses untuk melihat data Purchase Order.
+        </div>
+    @endif
 </div> {{-- Penutup untuk .col-sm-12 --}}
 
 <!-- CREATE PO SUPPLIER MODAL -->
@@ -1178,11 +1213,17 @@ $(document).ready(function(){
         };
     }
 
-    // DataTable setup for Supplier tab
-    var table = $('#basic-1').DataTable(createDataTableConfig('basic-1', 'filter-status-supplier', 1));
+    // DataTable setup for Supplier tab (only if tab is visible)
+    var table = null;
+    if ($('#basic-1').length > 0) {
+        table = $('#basic-1').DataTable(createDataTableConfig('basic-1', 'filter-status-supplier', 1));
+    }
 
-    // DataTable setup for Transportir tab
-    var tableTransportir = $('#basic-1-transportir').DataTable(createDataTableConfig('basic-1-transportir', 'filter-status-transportir', 2));
+    // DataTable setup for Transportir tab (only if tab is visible)
+    var tableTransportir = null;
+    if ($('#basic-1-transportir').length > 0) {
+        tableTransportir = $('#basic-1-transportir').DataTable(createDataTableConfig('basic-1-transportir', 'filter-status-transportir', 2));
+    }
 
     // Load summary cards
     function loadSummary() {
@@ -1202,13 +1243,17 @@ $(document).ready(function(){
 
     // Filter change: reload DataTable and summary for Supplier tab
     $('#filter-status-supplier').on('change', function(){
-        table.ajax.reload();
+        if (table) {
+            table.ajax.reload();
+        }
         loadSummary();
     });
 
     // Filter change: reload DataTable for Transportir tab
     $('#filter-status-transportir').on('change', function(){
-        tableTransportir.ajax.reload();
+        if (tableTransportir) {
+            tableTransportir.ajax.reload();
+        }
     });
 
     // Load payment methods once for all modals
@@ -1839,8 +1884,10 @@ $(document).ready(function(){
                     console.log('Success response:', res);
                     Swal.fire('Berhasil', res.message || 'Operasi berhasil', 'success');
                     $(form).closest('.modal').modal('hide');
-                    table.ajax.reload();
-                    if (typeof tableTransportir !== 'undefined') {
+                    if (table) {
+                        table.ajax.reload();
+                    }
+                    if (tableTransportir) {
                         tableTransportir.ajax.reload();
                     }
                     loadSummary();
