@@ -129,7 +129,7 @@
                 <div class="invalid-feedback">Field Qty wajib diisi.</div>
               </div>
               <div class="col-md-4"><label>Sub Total</label><input type="text" id="cp_sub_total" class="form-control" readonly></div>
-              <div class="col-md-4"><label>PPN</label><input type="text" id="cp_ppn" class="form-control" readonly></div>
+              <div class="col-md-4"><label>PPN</label><input type="text" id="cp_ppn" class="form-control"></div>
               <div class="col-md-4">
                 <label>Total</label>
                 <input type="text" id="cp_total" class="form-control" readonly>
@@ -143,7 +143,7 @@
               <div class="col-md-12"><label>Terbilang</label><input type="text" name="terbilang" id="cp_terbilang" class="form-control" readonly></div>
               <div class="col-md-12">
                 <label>Description</label>
-                <textarea name="description" id="cp_description" class="form-control" required></textarea>
+                <textarea name="description" id="cp_description" class="form-control" required>Transport</textarea>
                 <div class="invalid-feedback">Field Description wajib diisi.</div>
               </div>
               <div class="col-md-12"><label>Special Instruction</label><textarea name="special_notes" id="cp_special_notes" class="form-control"></textarea></div>
@@ -194,6 +194,14 @@ function terbilang(n) {
     return terbilang(Math.floor(n/1000000000)) + " miliar" + (n % 1000000000 ? " " + terbilang(n % 1000000000) : "");
 }
 
+// --- Helper: Parse Currency Value ---
+function parseCurrencyValue(value) {
+    if (!value) return 0;
+    // Remove "Rp. ", spaces, and dots (thousand separators)
+    var numeric = value.toString().replace(/Rp\.?\s*/g, '').replace(/\./g, '').replace(/\s/g, '');
+    return parseFloat(numeric) || 0;
+}
+
 // --- Hitung & Update Otomatis Semua Kolom Transportir (tanpa PBBKB, BPH, dan PPH) ---
 function calcTransportirFields() {
     var qty = parseFloat($('#cp_qty').val().replace(/\D/g,'')) || 0;
@@ -201,18 +209,32 @@ function calcTransportirFields() {
     var transport = parseFloat($('#cp_transport_raw').val()) || 0;
 
     var subtotal = (qty * harga)
-    var valPPN = subtotal * 0.11;
+    
+    // Calculate default PPN value
+    var valPPNCalculated = subtotal * 0.11;
+    
+    // Get actual PPN value (manual edit or calculated)
+    var valPPN = 0;
+    
+    // Check if PPN field is manually edited, if not use calculated value
+    if (!$('#cp_ppn').data('manually-edited')) {
+        valPPN = valPPNCalculated;
+        $('#cp_ppn').val('Rp. ' + Math.round(valPPN).toLocaleString('id-ID'));
+        $('#cp_ppn_raw').val(Math.round(valPPN));
+    } else {
+        valPPN = parseCurrencyValue($('#cp_ppn').val());
+        $('#cp_ppn_raw').val(Math.round(valPPN));
+    }
+    
+    // Calculate total using actual PPN value
     var Pajak = valPPN;
     var total = subtotal + Pajak + transport;
 
     var subTotalText = 'Rp. ' + subtotal.toLocaleString('id-ID');
-    var ppnText = 'Rp. ' + Math.round(valPPN).toLocaleString('id-ID');
     var totalText = 'Rp. ' + Math.round(total).toLocaleString('id-ID');
 
     $('#cp_sub_total').val(subTotalText);
     $('#cp_sub_total_raw').val(subtotal);
-    $('#cp_ppn').val(ppnText);
-    $('#cp_ppn_raw').val(Math.round(valPPN));
     $('#cp_total').val(totalText);
     $('#cp_total_raw').val(Math.round(total));
 
@@ -342,6 +364,8 @@ $(document).ready(function(){
             $('#cp_nama_customer').val('');
             $('#select-po').removeData('no-seq');
             $('#cp_vendor_po').data('user-edited', false);
+            // Reset manually-edited flag untuk PPN
+            $('#cp_ppn').removeData('manually-edited');
             return;
         }
         
@@ -382,11 +406,16 @@ $(document).ready(function(){
                         $('#cp_nama_customer').val('');
                         console.log('No nama_customer found in Customer PO validation response'); // Debug log
                     }
+                    
+                    // Reset manually-edited flag untuk PPN (karena PO berubah, reset ke auto-calc)
+                    $('#cp_ppn').removeData('manually-edited');
                 } else {
                     // Jika response tidak valid, reset semua field
                     $('#cp_dn_no').val('');
                     $('#cp_nama_customer').val('');
                     $('#select-po').removeData('no-seq');
+                    // Reset manually-edited flag untuk PPN
+                    $('#cp_ppn').removeData('manually-edited');
                 }
             },
             error: function(xhr) {
@@ -402,6 +431,8 @@ $(document).ready(function(){
                         // Reset dropdown Customer PO
                         $('#select-po').val('').trigger('change');
                         $('#po_number').val('');
+                        // Reset manually-edited flag untuk PPN
+                        $('#cp_ppn').removeData('manually-edited');
                     });
                 } else {
                     // Error lainnya
@@ -411,6 +442,8 @@ $(document).ready(function(){
                         text: xhr.responseJSON?.message || 'Terjadi kesalahan saat memvalidasi PO Supplier',
                         confirmButtonText: 'OK'
                     });
+                    // Reset manually-edited flag untuk PPN
+                    $('#cp_ppn').removeData('manually-edited');
                 }
             }
         });
@@ -424,6 +457,25 @@ $(document).ready(function(){
         calcTransportirFields();
     });
     $('#cp_qty').on('change', calcTransportirFields);
+
+    // Event handler untuk PPN (editable)
+    $('#cp_ppn').on('input', function(){
+        // Allow free typing, only update raw value
+        var numeric = $(this).val().replace(/[^\d]/g,'');
+        var value = numeric ? parseInt(numeric, 10) : 0;
+        $('#' + $(this).attr('id') + '_raw').val(value);
+        $(this).data('manually-edited', true);
+        calcTransportirFields();
+    });
+    
+    // Format on blur
+    $('#cp_ppn').on('blur', function(){
+        var numeric = $(this).val().replace(/[^\d]/g,'');
+        var numValue = numeric ? parseInt(numeric, 10) : 0;
+        $(this).val('Rp. ' + numValue.toLocaleString('id-ID'));
+        $('#' + $(this).attr('id') + '_raw').val(numValue);
+        calcTransportirFields();
+    });
 
     // Form submit
     $('#form-create-po-transportir').on('submit', function(e) {

@@ -101,11 +101,7 @@
                 <input type="text" name="delivery_to" id="sp_delivery_to" class="form-control" required>
                 <div class="invalid-feedback">Field Delivery To wajib diisi.</div>
               </div>
-              <div class="col-md-4">
-                <label>Nilai PO</label>
-                <input type="text" id="sp_nilai_po" class="form-control" readonly required>
-                <div class="invalid-feedback">Field Nilai PO wajib diisi.</div>
-              </div>
+              <!-- Baris 1: Harga, Qty, Sub Total -->
               <div class="col-md-4">
                 <label>Harga</label>
                 <input type="text" id="sp_harga" class="form-control" required>
@@ -116,15 +112,35 @@
                 <input type="number" name="qty" id="sp_qty" class="form-control" required>
                 <div class="invalid-feedback">Field Qty wajib diisi.</div>
               </div>
-              <div class="col-md-4"><label>Sub Total</label><input type="text" id="sp_sub_total" class="form-control" readonly></div>
-              <div class="col-md-4"><label>PPN</label><input type="text" id="sp_ppn" class="form-control" readonly></div>
-              <div class="col-md-4"><label>PPH</label><input type="text" id="sp_pph" class="form-control" readonly></div>
-              <div class="col-md-4"><label>PBBKB</label><input type="text" id="sp_pbbkb" class="form-control" readonly></div>
-              <div class="col-md-4"><label>BPH</label><input type="text" id="sp_bph" class="form-control" readonly></div>
+              <div class="col-md-4">
+                <label>Sub Total</label>
+                <input type="text" id="sp_sub_total" class="form-control" readonly>
+              </div>
+              <!-- Baris 2: PPN, PPH, PBBKB -->
+              <div class="col-md-4">
+                <label>PPN</label>
+                <input type="text" id="sp_ppn" class="form-control">
+              </div>
+              <div class="col-md-4">
+                <label>PPH</label>
+                <input type="text" id="sp_pph" class="form-control">
+              </div>
+              <div class="col-md-4">
+                <label>PBBKB</label>
+                <input type="text" id="sp_pbbkb" class="form-control">
+              </div>
+              <!-- Baris 3: BPH, Total, Terbilang -->
+              <div class="col-md-4">
+                <label>BPH</label>
+                <input type="text" id="sp_bph" class="form-control">
+              </div>
               <div class="col-md-4">
                 <label>Total</label>
                 <input type="text" id="sp_total" class="form-control" readonly>
-                <div id="sp_warning_profit" class="mt-2" style="display: none;"></div>
+              </div>
+              <div class="col-md-4">
+                <label>Terbilang</label>
+                <input type="text" name="terbilang" id="sp_terbilang" class="form-control" readonly>
               </div>
               <!-- Hidden raw value inputs for decimal submission -->
               <input type="hidden" id="sp_nilai_po_raw" name="nilai_po">
@@ -136,7 +152,6 @@
               <input type="hidden" id="sp_pph_raw" name="pph">
               <input type="hidden" id="sp_bph_raw" name="bph">
               <input type="hidden" id="sp_total_raw" name="total">
-              <div class="col-md-12"><label>Terbilang</label><input type="text" name="terbilang" id="sp_terbilang" class="form-control" readonly></div>
               <div class="col-md-12"><label>Keterangan</label><textarea name="description" id="sp_description" class="form-control"></textarea></div>
               <div class="col-md-12"><label>Additional Notes</label><textarea name="additional_notes" id="sp_additional_notes" class="form-control"></textarea></div>
             </div>
@@ -186,76 +201,98 @@ function terbilang(n) {
     return terbilang(Math.floor(n/1000000000)) + " miliar" + (n % 1000000000 ? " " + terbilang(n % 1000000000) : "");
 }
 
+// --- Helper: Parse Currency Value ---
+function parseCurrencyValue(value) {
+    if (!value) return 0;
+    // Remove "Rp. ", spaces, and dots (thousand separators)
+    var numeric = value.toString().replace(/Rp\.?\s*/g, '').replace(/\./g, '').replace(/\s/g, '');
+    return parseFloat(numeric) || 0;
+}
+
 // --- Hitung & Update Otomatis Semua Kolom Supplier ---
 function calcSupplierFields() {
     var qty = parseFloat($('#sp_qty').val().replace(/\D/g,'')) || 0;
     var harga = parseFloat($('#sp_harga_raw').val()) || 0;
-    var nilaiPO = parseFloat($('#sp_nilai_po_raw').val()) || 0;
     var tipeSph = $('#sp_tipe_sph').val() || '';
 
     var subtotal = (qty * harga)
-    var valPPN = subtotal * 0.11;
+    
+    // Calculate default values
+    var valPPNCalculated = subtotal * 0.11;
     
     // Logic untuk PPH dan PBBKB berdasarkan tipe_sph
-    var valPBBKB = 0;
-    var valPPh = 0;
+    var valPBBKBCalculated = 0;
+    var valPPhCalculated = 0;
     if (tipeSph === 'MMTEI') {
         // Auto calculate untuk MMTEI
-        valPBBKB = (qty * harga) * 0.075;
-        valPPh = (qty * harga) * 0.03;
+        valPBBKBCalculated = (qty * harga) * 0.075;
+        valPPhCalculated = (qty * harga) * 0.03;
     } else if (tipeSph === 'IASE') {
         // Set ke 0 untuk IASE
-        valPBBKB = 0;
-        valPPh = 0;
+        valPBBKBCalculated = 0;
+        valPPhCalculated = 0;
     } else {
         // Default: hitung seperti biasa jika tipe_sph belum di-set
-        valPBBKB = (qty * harga) * 0.075;
-        valPPh = (qty * harga) * 0.03;
+        valPBBKBCalculated = (qty * harga) * 0.075;
+        valPPhCalculated = (qty * harga) * 0.03;
     }
     
-    var valBPH = (qty * harga) * 0.025;
+    var valBPHCalculated = (qty * harga) * 0.025;
+    
+    // Get actual values (manual edit or calculated)
+    var valPPN = 0;
+    var valPBBKB = 0;
+    var valPPh = 0;
+    var valBPH = 0;
+    
+    // Check if fields are manually edited, if not use calculated values
+    if (!$('#sp_ppn').data('manually-edited')) {
+        valPPN = valPPNCalculated;
+        $('#sp_ppn').val('Rp. ' + Math.round(valPPN).toLocaleString('id-ID'));
+        $('#sp_ppn_raw').val(Math.round(valPPN));
+    } else {
+        valPPN = parseCurrencyValue($('#sp_ppn').val());
+        $('#sp_ppn_raw').val(Math.round(valPPN));
+    }
+    
+    if (!$('#sp_pbbkb').data('manually-edited')) {
+        valPBBKB = valPBBKBCalculated;
+        $('#sp_pbbkb').val('Rp. ' + Math.round(valPBBKB).toLocaleString('id-ID'));
+        $('#sp_pbbkb_raw').val(Math.round(valPBBKB));
+    } else {
+        valPBBKB = parseCurrencyValue($('#sp_pbbkb').val());
+        $('#sp_pbbkb_raw').val(Math.round(valPBBKB));
+    }
+    
+    if (!$('#sp_pph').data('manually-edited')) {
+        valPPh = valPPhCalculated;
+        $('#sp_pph').val('Rp. ' + Math.round(valPPh).toLocaleString('id-ID'));
+        $('#sp_pph_raw').val(Math.round(valPPh));
+    } else {
+        valPPh = parseCurrencyValue($('#sp_pph').val());
+        $('#sp_pph_raw').val(Math.round(valPPh));
+    }
+    
+    if (!$('#sp_bph').data('manually-edited')) {
+        valBPH = valBPHCalculated;
+        $('#sp_bph').val('Rp. ' + Math.round(valBPH).toLocaleString('id-ID'));
+        $('#sp_bph_raw').val(Math.round(valBPH));
+    } else {
+        valBPH = parseCurrencyValue($('#sp_bph').val());
+        $('#sp_bph_raw').val(Math.round(valBPH));
+    }
+    
+    // Calculate total using actual values
     var Pajak = valPPN + valPBBKB + valPPh + valBPH;
     var total = subtotal + Pajak;
 
     var subTotalText = 'Rp. ' + subtotal.toLocaleString('id-ID');
-    var ppnText = 'Rp. ' + Math.round(valPPN).toLocaleString('id-ID');
-    var pbbkbText = 'Rp. ' + Math.round(valPBBKB).toLocaleString('id-ID');
-    var bphText = 'Rp. ' + Math.round(valBPH).toLocaleString('id-ID');
-    var pphText = 'Rp. ' + Math.round(valPPh).toLocaleString('id-ID');
     var totalText = 'Rp. ' + Math.round(total).toLocaleString('id-ID');
 
     $('#sp_sub_total').val(subTotalText);
     $('#sp_sub_total_raw').val(subtotal);
-    $('#sp_ppn').val(ppnText);
-    $('#sp_ppn_raw').val(Math.round(valPPN));
-    $('#sp_pbbkb').val(pbbkbText);
-    $('#sp_pbbkb_raw').val(Math.round(valPBBKB));
-    $('#sp_bph').val(bphText);
-    $('#sp_bph_raw').val(Math.round(valBPH));
-    $('#sp_pph').val(pphText);
-    $('#sp_pph_raw').val(Math.round(valPPh));
     $('#sp_total').val(totalText);
     $('#sp_total_raw').val(Math.round(total));
-
-    // Hitung dan tampilkan peringatan/keuntungan
-    var totalRounded = Math.round(total);
-    var $warningProfit = $('#sp_warning_profit');
-    
-    if (nilaiPO > 0) {
-        if (totalRounded < nilaiPO) {
-            // Peringatan: Total < Nilai PO (merah)
-            $warningProfit.html('<small class="text-danger fw-bold">Peringatan : Harga PO lebih tinggi daripada nilai Total</small>');
-            $warningProfit.show();
-        } else {
-            // Keuntungan: Total >= Nilai PO (hijau)
-            var keuntungan = totalRounded - nilaiPO;
-            var keuntunganText = 'Rp. ' + keuntungan.toLocaleString('id-ID');
-            $warningProfit.html('<small class="text-success fw-bold">Keuntungan ' + keuntunganText + '</small>');
-            $warningProfit.show();
-        }
-    } else {
-        $warningProfit.hide();
-    }
 
     var terbilangText = total ? terbilang(Math.round(total)) + ' rupiah' : 'nol rupiah';
     $('#sp_terbilang').val(terbilangText.charAt(0).toUpperCase() + terbilangText.slice(1));
@@ -395,11 +432,13 @@ $(document).ready(function(){
     $('#sp_po_no').on('change', function(){
         var poNo = $(this).val();
         if (!poNo) {
-            $('#sp_nilai_po, #sp_qty').val('');
+            $('#sp_qty').val('');
             $('#sp_nilai_po_raw').val('');
             $('#sp_tipe_sph').val('');
             $('#sp_po_no').removeData('no-seq');
             $('#sp_vendor_po').data('user-edited', false);
+            // Reset manually-edited flags untuk tax fields
+            $('#sp_ppn, #sp_pph, #sp_pbbkb, #sp_bph').removeData('manually-edited');
             // Reset vendor dropdown
             $('#sp_vendor_name').val('').trigger('change');
             $('#sp_vendor_name').data('loaded', false);
@@ -408,10 +447,9 @@ $(document).ready(function(){
         $.get('/api/good_receipt/gr_detail/' + encodeURIComponent(poNo), function(res){
             if (res.success && res.data) {
                 var d = res.data;
-                // Set Nilai PO (hanya untuk display, tidak dikirim ke backend)
+                // Set Nilai PO (hidden field untuk backend)
                 var nilaiPO = parseFloat(d.total) || 0;
                 $('#sp_nilai_po_raw').val(nilaiPO);
-                $('#sp_nilai_po').val('Rp. ' + nilaiPO.toLocaleString('id-ID'));
                 
                 // Set tipe_sph dari response
                 if (d.tipe_sph) {
@@ -423,6 +461,9 @@ $(document).ready(function(){
                 // Reset vendor dropdown karena tipe_sph berubah
                 $('#sp_vendor_name').val('').trigger('change');
                 $('#sp_vendor_name').data('loaded', false);
+                
+                // Reset manually-edited flags untuk tax fields (karena PO berubah, reset ke auto-calc)
+                $('#sp_ppn, #sp_pph, #sp_pbbkb, #sp_bph').removeData('manually-edited');
                 
                 // Simpan no_seq di data attribute untuk digunakan saat vendor name change
                 if (d.no_seq) {
@@ -443,10 +484,12 @@ $(document).ready(function(){
                 }
             }
         }).fail(function() {
-            $('#sp_nilai_po, #sp_qty').val('');
+            $('#sp_qty').val('');
             $('#sp_nilai_po_raw').val('');
             $('#sp_tipe_sph').val('');
             $('#sp_po_no').removeData('no-seq');
+            // Reset manually-edited flags untuk tax fields
+            $('#sp_ppn, #sp_pph, #sp_pbbkb, #sp_bph').removeData('manually-edited');
             // Reset vendor dropdown
             $('#sp_vendor_name').val('').trigger('change');
             $('#sp_vendor_name').data('loaded', false);
@@ -461,6 +504,32 @@ $(document).ready(function(){
         calcSupplierFields();
     });
     $('#sp_qty').on('change', calcSupplierFields);
+
+    // Event handler untuk PPN, PPH, PBBKB, BPH (editable)
+    function setupEditableTaxField(fieldId) {
+        $(fieldId).on('input', function(){
+            // Allow free typing, only update raw value
+            var numeric = $(this).val().replace(/[^\d]/g,'');
+            var value = numeric ? parseInt(numeric, 10) : 0;
+            $('#' + $(this).attr('id') + '_raw').val(value);
+            $(this).data('manually-edited', true);
+            calcSupplierFields();
+        });
+        
+        // Format on blur
+        $(fieldId).on('blur', function(){
+            var numeric = $(this).val().replace(/[^\d]/g,'');
+            var numValue = numeric ? parseInt(numeric, 10) : 0;
+            $(this).val('Rp. ' + numValue.toLocaleString('id-ID'));
+            $('#' + $(this).attr('id') + '_raw').val(numValue);
+            calcSupplierFields();
+        });
+    }
+    
+    setupEditableTaxField('#sp_ppn');
+    setupEditableTaxField('#sp_pph');
+    setupEditableTaxField('#sp_pbbkb');
+    setupEditableTaxField('#sp_bph');
 
     // Form submit
     $('#form-create-po-supplier').on('submit', function(e) {
