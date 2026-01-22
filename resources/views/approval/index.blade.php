@@ -213,38 +213,23 @@
 
 <!-- SPH Modal Detail Confirmation -->
 <div class="modal fade" id="modalConfirmation" tabindex="-1" aria-labelledby="modalConfirmationLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header bg-light">
         <h5 class="modal-title fw-bold text-dark" id="modalConfirmationLabel">Detail SPH</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <!-- Table detail -->
-        <table class="table table-bordered mb-4">
-          <tbody>
-            <tr><th width="35%">Tipe SPH</th><td id="detail-tipe-sph"></td></tr>
-            <tr><th>No SPH</th><td id="detail-no-sph"></td></tr>
-            <tr><th>Nama Perusahaan</th><td id="detail-comp-name"></td></tr>
-            <tr><th>Produk Dibeli</th><td id="detail-product"></td></tr>
-            <tr id="row-harga-liter"><th>Harga /Liter</th><td id="detail-price-liter"></td></tr>
-            <tr id="row-ppn"><th>PPN</th><td id="detail-ppn"></td></tr>
-            <!-- For pbbkbinclude: OAT fields should appear right after PPN -->
-            <tr id="row-oat"><th>OAT</th><td id="detail-oat"></td></tr>
-            <tr id="row-ppn-oat"><th>PPN OAT</th><td id="detail-ppn-oat"></td></tr>
-            <tr id="row-oat-lokasi"><th>OAT Lokasi</th><td id="detail-oat-lokasi"></td></tr>
-            <!-- For create: show PBBKB; for pbbkbinclude: keep hidden -->
-            <tr id="row-pbbkb"><th>PBBKB</th><td id="detail-pbbkb"></td></tr>
-            <!-- Total Harga shown for create and pbbkbinclude -->
-            <tr id="row-total-harga"><th>Total Harga</th><td id="detail-total-price"></td></tr>
-            <tr><th>Metode Pembayaran</th><td id="detail-pay-method"></td></tr>
-            <tr><th>Nilai Susut</th><td id="detail-susut"></td></tr>
-            <tr><th>Note Berlaku</th><td id="detail-note-berlaku"></td></tr>
-          </tbody>
-        </table>
+        <!-- PDF Preview -->
+        <div class="mb-4" id="pdf-preview-container">
+          <label class="fw-bold mb-2">Preview SPH Document</label>
+          <div class="border rounded p-2" style="background-color: #f8f9fa;">
+            <iframe id="pdf-preview" src="" style="width: 100%; height: 600px; border: none;" frameborder="0"></iframe>
+          </div>
+        </div>
 
         <!-- Detail Lines (Kencana) -->
-        <div class="mb-4" id="kencana-details" style="display:none;">
+        <!-- <div class="mb-4" id="kencana-details" style="display:none;">
           <label class="fw-bold mb-2">Detail Item</label>
           <div class="table-responsive theme-scrollbar">
             <table class="display table" id="table-kencana-lines" style="width:100%">
@@ -262,7 +247,7 @@
               <tbody></tbody>
             </table>
           </div>
-        </div>
+        </div> -->
 
         <!-- Riwayat Remark Approval -->
         <div class="mb-4">
@@ -744,27 +729,15 @@
           return;
         }
 
-        // Isi detail table (gunakan data list bila tersedia)
-        var templateFormLower = (item && item.template_form ? String(item.template_form) : '').toLowerCase();
-        $('#detail-tipe-sph').text(item.tipe_sph || $tr.find('td').eq(0).text());
-        $('#detail-no-sph').text(item.no_sph || $tr.find('td').eq(1).text());
-        $('#detail-comp-name').text(item.nama_perusahaan || $tr.find('td').eq(2).text());
-        $('#detail-product').text(item.produk_dibeli || $tr.find('td').eq(3).text());
-        // Prefer values from API response item, fallback to row text
-        var apiHarga = item && (item.harga_per_liter != null) ? item.harga_per_liter : null;
-        var apiPpn   = item && (item.ppn != null) ? item.ppn : null;
-        var apiTotal = item && (item.total_harga != null) ? item.total_harga : null;
-        // Jika template gawi: SELALU tampilkan harga per liter
-        if (templateForm === 'gawi') {
-          $('#row-harga-liter').show();
-          $('#detail-price-liter').text(apiHarga != null ? formatRupiah(apiHarga) : $tr.find('td').eq(4).text());
+        // Set PDF Preview
+        var tempFile = item && item.temp_file ? item.temp_file : '';
+        if (tempFile) {
+          $('#pdf-preview').attr('src', tempFile);
+          $('#pdf-preview-container').show();
         } else {
-          $('#detail-price-liter').text(apiHarga != null ? formatRupiah(apiHarga) : $tr.find('td').eq(4).text());
+          $('#pdf-preview-container').hide();
+          $('#pdf-preview').attr('src', '');
         }
-        $('#detail-ppn').text(apiPpn != null ? formatRupiah(apiPpn) : $tr.find('td').eq(5).text());
-        $('#detail-pbbkb').text($tr.find('td').eq(6).text());
-        $('#detail-total-price').text(apiTotal != null ? formatRupiah(apiTotal) : $tr.find('td').eq(7).text());
-        $('#detail-pay-method').text($tr.find('td').eq(8).text());
 
         // Kosongkan & tampilkan spinner pada remarkHistory
         $('#remarkHistory').html('<li class="text-center py-2"><div class="spinner-border text-primary"></div> Memuat riwayat…</li>');
@@ -776,33 +749,8 @@
         $('input[name="approval_status"]').prop('checked', false);
         $('#approvalComment').val('');
 
-        // Gunakan data dari list untuk mengisi field tambahan & visibilitas
+        // Gunakan data dari list untuk template form
         var templateForm = (item && item.template_form ? String(item.template_form) : '').toLowerCase();
-        $('#detail-susut').text(item && item.susut != null ? item.susut : '');
-        $('#detail-note-berlaku').text(item && item.note_berlaku ? item.note_berlaku : '');
-        $('#detail-oat').text(item && item.oat != null ? item.oat : '');
-        $('#detail-ppn-oat').text(item && item.ppn_oat != null ? item.ppn_oat : '');
-        $('#detail-oat-lokasi').text(item && (item.oat_lokasi || item.site_location) ? (item.oat_lokasi || item.site_location) : '');
-
-        // Hide all conditional rows first
-        $('#kencana-details, #row-ppn, #row-pbbkb, #row-total-harga, #row-oat, #row-ppn-oat, #row-oat-lokasi').hide();
-        if (templateForm === 'create') {
-          // create: show PPN, PBBKB, Total Harga
-          $('#row-ppn, #row-pbbkb, #row-total-harga').show();
-          $('#row-harga-liter').show();
-        } else if (templateForm === 'pbbkbinclude') {
-          // pbbkbinclude: show PPN, OAT, PPN OAT, OAT Lokasi, Total Harga
-          $('#row-ppn').show();
-          $('#row-oat, #row-ppn-oat, #row-oat-lokasi').show();
-          $('#row-total-harga').show();
-          $('#row-harga-liter').show();
-          // keep PBBKB hidden for pbbkbinclude
-        } else if (templateForm === 'gawi') {
-          // gawi: tampilkan Harga, PPN, Total (tanpa PBBKB atau OAT)
-          $('#row-ppn').show();
-          $('#row-total-harga').show();
-          $('#row-harga-liter').show();
-        }
 
         // Dynamic details table: show when details array exists, otherwise hide
         var details = (item && Array.isArray(item.details)) ? item.details : [];

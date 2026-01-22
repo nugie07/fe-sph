@@ -200,13 +200,13 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="qty" class="form-label">Qty</label>
-                                <input type="text" class="form-control" id="qty" name="qty" required>
+                                <input type="text" class="form-control" id="qty" name="qty">
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="oat" class="form-label">OAT</label>
-                                <input type="text" class="form-control" id="oat" name="oat" required>
+                                <input type="text" class="form-control" id="oat" name="oat">
                             </div>
                         </div>
                     </div>
@@ -432,11 +432,15 @@
             $btn.prop('disabled', true);
             $spinner.removeClass('d-none');
 
+            // Parse QTY and OAT, set to 0 if empty or invalid
+            const qtyValue = $('#qty').val().trim();
+            const oatValue = $('#oat').val().trim();
+            
             const formData = {
                 cust_id: $('#cust_id').val(),
                 location: $('#location').val(),
-                qty: $('#qty').val(),
-                oat: $('#oat').val()
+                qty: qtyValue ? (parseFloat(qtyValue) || 0) : 0,
+                oat: oatValue ? (parseFloat(oatValue) || 0) : 0
             };
 
             const oatId = $('#oat_id').val();
