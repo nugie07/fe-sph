@@ -1,0 +1,72 @@
+[
+  {
+    "lokasi": "Kalteng",
+    "details": [
+      {
+        "nama_lokasi": "Kebun Isa 1",
+        "oat5kl": 464,
+        "oat10kl": 400
+      },
+      {
+        "nama_lokasi": "Kebun Isa 2",
+        "oat5kl": 590,
+        "oat10kl": 450
+      },
+      {
+        "nama_lokasi": "PKS Tamiyang",
+        "oat5kl": 640,
+        "oat10kl": 480
+      },
+      {
+        "nama_lokasi": "AMS",
+        "oat5kl": 446,
+        "oat10kl": 400
+      },
+      {
+        "nama_lokasi": "Tamiyang KMP",
+        "oat5kl": 530,
+        "oat10kl": 480
+      }
+    ]
+  },
+  {
+    "lokasi": "Kalsel",
+    "details": [
+      {
+        "nama_lokasi": "Jorong/Kebun Tengah",
+        "oat5kl": 400,
+        "oat10kl": 300
+      },
+      {
+        "nama_lokasi": "GMK/Kebun Barat",
+        "oat5kl": 400,
+        "oat10kl": 300
+      },
+      {
+        "nama_lokasi": "PKS Jorong",
+        "oat5kl": 400,
+        "oat10kl": 300
+      },
+      {
+        "nama_lokasi": "SSU/Pelaihari",
+        "oat5kl": 240,
+        "oat10kl": 150
+      },
+      {
+        "nama_lokasi": "Kintap",
+        "oat5kl": 414,
+        "oat10kl": 364
+      },
+      {
+        "nama_lokasi": "KBN/Pks Satui",
+        "oat5kl": 600,
+        "oat10kl": 400
+      },
+      {
+        "nama_lokasi": "Banjarmasin",
+        "oat5kl": 80,
+        "oat10kl": 80
+      }
+    ]
+  }
+]

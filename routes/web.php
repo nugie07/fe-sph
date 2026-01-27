@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ProxyController;
 
@@ -49,6 +50,78 @@ Route::get('/test-permission', function() {
 // SPH Routes with Permission Middleware
 Route::view('sph', 'sph.index')->name('sph')->middleware('permission:sph.menu');
 Route::view('sph-create', 'sph.create')->name('sph_create')->middleware('permission:sph.menu');
+// Route untuk serve OAT Gawi JSON file (harus sebelum route dynamic form agar tidak bentrok)
+Route::get('sph/form/oat_gawi.json', function () {
+    $jsonPath = resource_path('views/sph/form/oat_gawi.json');
+    if (file_exists($jsonPath)) {
+        $jsonContent = file_get_contents($jsonPath);
+        return response($jsonContent, 200)
+            ->header('Content-Type', 'application/json');
+    }
+    return response()->json(['error' => 'File not found'], 404);
+})->name('sph.form.oat_gawi.json');
+// Route untuk update OAT Gawi JSON file
+Route::post('sph/form/oat_gawi.json/update', function (Request $request) {
+    $jsonPath = resource_path('views/sph/form/oat_gawi.json');
+    
+    if (!file_exists($jsonPath)) {
+        return response()->json(['error' => 'File not found'], 404);
+    }
+    
+    $request->validate([
+        'lokasi' => 'required|string|in:Kalteng,Kalsel',
+        'details' => 'required|array',
+        'details.*.nama_lokasi' => 'required|string',
+        'details.*.oat5kl' => 'required|numeric',
+        'details.*.oat10kl' => 'required|numeric',
+    ]);
+    
+    // Baca data JSON yang ada
+    $existingData = json_decode(file_get_contents($jsonPath), true);
+    if (!is_array($existingData)) {
+        $existingData = [];
+    }
+    
+    // Cari index lokasi yang akan di-update
+    $lokasiIndex = -1;
+    foreach ($existingData as $index => $item) {
+        if ($item['lokasi'] === $request->lokasi) {
+            $lokasiIndex = $index;
+            break;
+        }
+    }
+    
+    // Update atau tambah data
+    $newDetails = [];
+    foreach ($request->details as $detail) {
+        $newDetails[] = [
+            'nama_lokasi' => $detail['nama_lokasi'],
+            'oat5kl' => floatval($detail['oat5kl']),
+            'oat10kl' => floatval($detail['oat10kl']),
+        ];
+    }
+    
+    if ($lokasiIndex >= 0) {
+        // Update existing lokasi
+        $existingData[$lokasiIndex]['details'] = $newDetails;
+    } else {
+        // Tambah lokasi baru
+        $existingData[] = [
+            'lokasi' => $request->lokasi,
+            'details' => $newDetails,
+        ];
+    }
+    
+    // Simpan ke file dengan format yang rapi
+    $jsonContent = json_encode($existingData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    file_put_contents($jsonPath, $jsonContent);
+    
+    return response()->json([
+        'success' => true,
+        'message' => 'Data OAT berhasil diupdate',
+        'data' => $existingData
+    ]);
+})->name('sph.form.oat_gawi.json.update');
 // Dynamic SPH form route: renders blade in resources/views/sph/form/{form}.blade.php
 Route::get('sph/form/{form}', function ($form) {
     $view = 'sph.form.' . $form;

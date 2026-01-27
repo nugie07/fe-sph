@@ -97,7 +97,11 @@
               <div class="row g-3 mt-3">
                 <div class="col-md-6">
                   <label class="form-label">Lokasi OAT</label>
-                  <input type="text" class="form-control" id="lokasi_oat" placeholder="Contoh: Kalsel">
+                  <select class="form-select" id="lokasi_oat" name="lokasi_oat">
+                    <option value="">Pilih Lokasi</option>
+                    <option value="Kalsel">Kalsel</option>
+                    <option value="Kalteng">Kalteng</option>
+                  </select>
                 </div>
               </div>
 
@@ -321,6 +325,38 @@
 
         // Dynamic OAT table handlers
         function parseNum(val){ return parseFloat(String(val).replace(/[^0-9.]/g,'')||'0'); }
+        // Function untuk parse angka format Indonesia (koma sebagai desimal, titik sebagai thousand separator)
+        function parseNumIndonesian(val) {
+            if (!val) return 0;
+            let str = String(val).trim();
+            // Hapus semua karakter selain angka, titik, dan koma
+            str = str.replace(/[^0-9.,]/g, '');
+            if (!str) return 0;
+            
+            // Jika tidak ada koma, hapus titik (thousand separator) dan parse
+            if (str.indexOf(',') === -1) {
+                return parseFloat(str.replace(/\./g, '')) || 0;
+            }
+            
+            // Jika ada koma, cari koma terakhir (desimal separator)
+            const lastCommaIndex = str.lastIndexOf(',');
+            const afterComma = str.substring(lastCommaIndex + 1);
+            const beforeComma = str.substring(0, lastCommaIndex);
+            
+            // Jika setelah koma ada 1-3 digit angka, kemungkinan koma adalah desimal separator
+            if (afterComma.length > 0 && afterComma.length <= 3 && /^\d+$/.test(afterComma)) {
+                // Format Indonesia: titik sebagai thousand separator, koma sebagai desimal
+                const integerPart = beforeComma.replace(/\./g, '');
+                const decimalPart = afterComma;
+                const result = parseFloat(integerPart + '.' + decimalPart);
+                return isNaN(result) ? 0 : result;
+            }
+            
+            // Jika format tidak jelas, coba hapus semua separator dan parse
+            // Tapi jika ada koma di tengah dengan banyak digit setelahnya, mungkin thousand separator
+            // Untuk safety, hapus semua separator dan parse sebagai integer
+            return parseFloat(str.replace(/[,.]/g, '')) || 0;
+        }
         function addOatRow(initial){
             const row = $(
                 '<tr>'+
@@ -344,6 +380,55 @@
         $('#btn-add-oat').on('click', function(){ addOatRow(); });
         $('#btn-clear-oat').on('click', function(){ $('#oat-details-table tbody').empty(); });
         $(document).on('click', '#oat-details-table tbody .btn-oat-remove', function(){ $(this).closest('tr').remove(); });
+
+        // Event listener untuk Lokasi OAT dropdown - Load data dari JSON dan populate datatable
+        $('#lokasi_oat').on('change', function(){
+            const selectedLokasi = $(this).val();
+            if (!selectedLokasi) {
+                $('#oat-details-table tbody').empty();
+                return;
+            }
+
+            // Load data dari JSON file
+            $.getJSON('{{ route("sph.form.oat_gawi.json") }}')
+                .done(function(data){
+                    // Cari data berdasarkan lokasi yang dipilih
+                    const lokasiData = data.find(function(item){
+                        return item.lokasi === selectedLokasi;
+                    });
+
+                    if (lokasiData && lokasiData.details && lokasiData.details.length > 0) {
+                        // Clear datatable terlebih dahulu
+                        $('#oat-details-table tbody').empty();
+
+                        // Format function untuk format angka dengan koma sebagai desimal
+                        function formatOatValue(value) {
+                            return parseFloat(value || 0).toFixed(2).replace('.', ',');
+                        }
+
+                        // Add row untuk setiap detail lokasi
+                        lokasiData.details.forEach(function(detail){
+                            addOatRow({
+                                lokasi: detail.nama_lokasi,
+                                oat10: formatOatValue(detail.oat10kl),
+                                oat5: formatOatValue(detail.oat5kl)
+                            });
+                        });
+                    } else {
+                        // Jika tidak ada data, clear table
+                        $('#oat-details-table tbody').empty();
+                    }
+                })
+                .fail(function(xhr, status, error){
+                    console.error('Error loading OAT data:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Gagal memuat data OAT. Silakan coba lagi.',
+                        timer: 3000
+                    });
+                });
+        });
 
         // Event listener untuk produk
         $('#product').on('change', function() {
@@ -510,8 +595,9 @@
             $('#oat-details-table tbody tr').each(function(){
                 const $r = $(this);
                 const lokasi = ($r.find('.oat-lokasi').val() || '').trim();
-                const oat10 = parseNum($r.find('.oat-10').val());
-                const oat5 = parseNum($r.find('.oat-5').val());
+                // Gunakan parseNumIndonesian untuk handle format Indonesia (koma sebagai desimal)
+                const oat10 = parseNumIndonesian($r.find('.oat-10').val());
+                const oat5 = parseNumIndonesian($r.find('.oat-5').val());
                 const productText = $('#product').find(':selected').text() || '';
                 if (lokasi || oat10 || oat5) {
                     details.push({
@@ -551,6 +637,45 @@
                 success: function(res) {
                     var sphNo = $('#kode_sph').val() || (res && (res.kode_sph || (res.data && res.data.kode_sph))) || '';
                     var isRevisiNow = (passedStatus === 2);
+                    
+                    // Update JSON file dengan data OAT dari datatable
+                    const selectedLokasi = $('#lokasi_oat').val();
+                    if (selectedLokasi && details.length > 0) {
+                        // Build details untuk JSON (format sesuai struktur JSON)
+                        const jsonDetails = [];
+                        details.forEach(function(detail) {
+                            // Parse nilai OAT (detail.total_price dan detail.grand_total sudah dalam bentuk number dari parseNum)
+                            const oat10 = parseFloat(detail.total_price) || 0;
+                            const oat5 = parseFloat(detail.grand_total) || 0;
+                            
+                            jsonDetails.push({
+                                nama_lokasi: detail.cname_lname || '',
+                                oat5kl: oat5,
+                                oat10kl: oat10
+                            });
+                        });
+                        
+                        // Update JSON file via API
+                        $.ajax({
+                            url: '{{ route("sph.form.oat_gawi.json.update") }}',
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                            },
+                            data: {
+                                lokasi: selectedLokasi,
+                                details: jsonDetails
+                            },
+                            success: function(updateRes) {
+                                console.log('OAT JSON file updated successfully');
+                            },
+                            error: function(updateErr) {
+                                console.error('Failed to update OAT JSON file:', updateErr);
+                                // Tidak perlu show error ke user, karena form sudah berhasil disimpan
+                            }
+                        });
+                    }
+                    
                     var showAndClose = function(){
                         try {
                             if (window.parent && window.parent.$) {
