@@ -432,7 +432,7 @@
             $btn.prop('disabled', true);
             $spinner.removeClass('d-none');
 
-            // Parse QTY and OAT, set to 0 if empty or invalid
+            // Parse QTY (numeric), OAT is varchar so send as string
             const qtyValue = $('#qty').val().trim();
             const oatValue = $('#oat').val().trim();
             
@@ -440,7 +440,7 @@
                 cust_id: $('#cust_id').val(),
                 location: $('#location').val(),
                 qty: qtyValue ? (parseFloat(qtyValue) || 0) : 0,
-                oat: oatValue ? (parseFloat(oatValue) || 0) : 0
+                oat: oatValue || '' // OAT is varchar, send as string (not parsed as float)
             };
 
             const oatId = $('#oat_id').val();
