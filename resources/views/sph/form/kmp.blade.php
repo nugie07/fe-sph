@@ -94,7 +94,7 @@
                           <td><input type="text" class="form-control form-control-sm harga-dasar" placeholder="0" data-lokasi-type="Kalsel"></td>
                           <td><input type="text" class="form-control form-control-sm ppn" placeholder="0" readonly></td>
                           <td><input type="text" class="form-control form-control-sm total" placeholder="0" readonly></td>
-                          <td><input type="text" class="form-control form-control-sm transport" placeholder="0"></td>
+                          <td><input type="text" class="form-control form-control-sm transport" placeholder="0" value="1000"></td>
                           <td><input type="text" class="form-control form-control-sm grand-total" placeholder="0" readonly></td>
                         </tr>
                         <tr data-lokasi="Kalsel" data-nama="Sesulung Estate" data-qty="10">
@@ -102,7 +102,7 @@
                           <td><input type="text" class="form-control form-control-sm harga-dasar" placeholder="0" data-lokasi-type="Kalsel"></td>
                           <td><input type="text" class="form-control form-control-sm ppn" placeholder="0" readonly></td>
                           <td><input type="text" class="form-control form-control-sm total" placeholder="0" readonly></td>
-                          <td><input type="text" class="form-control form-control-sm transport" placeholder="0"></td>
+                          <td><input type="text" class="form-control form-control-sm transport" placeholder="0" value="850"></td>
                           <td><input type="text" class="form-control form-control-sm grand-total" placeholder="0" readonly></td>
                         </tr>
                         <tr data-lokasi="Kalsel" data-nama="Desa Betung" data-qty="5">
@@ -111,7 +111,7 @@
                           <td><input type="text" class="form-control form-control-sm harga-dasar" placeholder="0" data-lokasi-type="Kalsel"></td>
                           <td><input type="text" class="form-control form-control-sm ppn" placeholder="0" readonly></td>
                           <td><input type="text" class="form-control form-control-sm total" placeholder="0" readonly></td>
-                          <td><input type="text" class="form-control form-control-sm transport" placeholder="0"></td>
+                          <td><input type="text" class="form-control form-control-sm transport" placeholder="0" value="900"></td>
                           <td><input type="text" class="form-control form-control-sm grand-total" placeholder="0" readonly></td>
                         </tr>
                         <tr data-lokasi="Kalsel" data-nama="Desa Betung" data-qty="10">
@@ -119,7 +119,7 @@
                           <td><input type="text" class="form-control form-control-sm harga-dasar" placeholder="0" data-lokasi-type="Kalsel"></td>
                           <td><input type="text" class="form-control form-control-sm ppn" placeholder="0" readonly></td>
                           <td><input type="text" class="form-control form-control-sm total" placeholder="0" readonly></td>
-                          <td><input type="text" class="form-control form-control-sm transport" placeholder="0"></td>
+                          <td><input type="text" class="form-control form-control-sm transport" placeholder="0" value="750"></td>
                           <td><input type="text" class="form-control form-control-sm grand-total" placeholder="0" readonly></td>
                         </tr>
                       </tbody>
@@ -148,7 +148,7 @@
                           <td><input type="text" class="form-control form-control-sm harga-dasar" placeholder="0" data-lokasi-type="Kalteng"></td>
                           <td><input type="text" class="form-control form-control-sm ppn" placeholder="0" readonly></td>
                           <td><input type="text" class="form-control form-control-sm total" placeholder="0" readonly></td>
-                          <td><input type="text" class="form-control form-control-sm transport" placeholder="0"></td>
+                          <td><input type="text" class="form-control form-control-sm transport" placeholder="0" value="800"></td>
                           <td><input type="text" class="form-control form-control-sm grand-total" placeholder="0" readonly></td>
                         </tr>
                         <tr data-lokasi="Kalteng" data-nama="Pundu Pantai Harapan" data-qty="10">
@@ -156,7 +156,7 @@
                           <td><input type="text" class="form-control form-control-sm harga-dasar" placeholder="0" data-lokasi-type="Kalteng"></td>
                           <td><input type="text" class="form-control form-control-sm ppn" placeholder="0" readonly></td>
                           <td><input type="text" class="form-control form-control-sm total" placeholder="0" readonly></td>
-                          <td><input type="text" class="form-control form-control-sm transport" placeholder="0"></td>
+                          <td><input type="text" class="form-control form-control-sm transport" placeholder="0" value="674"></td>
                           <td><input type="text" class="form-control form-control-sm grand-total" placeholder="0" readonly></td>
                         </tr>
                         <tr data-lokasi="Kalteng" data-nama="Gunung Mas KHS" data-qty="5">
@@ -165,7 +165,7 @@
                           <td><input type="text" class="form-control form-control-sm harga-dasar" placeholder="0" data-lokasi-type="Kalteng"></td>
                           <td><input type="text" class="form-control form-control-sm ppn" placeholder="0" readonly></td>
                           <td><input type="text" class="form-control form-control-sm total" placeholder="0" readonly></td>
-                          <td><input type="text" class="form-control form-control-sm transport" placeholder="0"></td>
+                          <td><input type="text" class="form-control form-control-sm transport" placeholder="0" value="700"></td>
                           <td><input type="text" class="form-control form-control-sm grand-total" placeholder="0" readonly></td>
                         </tr>
                         <tr data-lokasi="Kalteng" data-nama="Gunung Mas KHS" data-qty="10">
@@ -173,7 +173,7 @@
                           <td><input type="text" class="form-control form-control-sm harga-dasar" placeholder="0" data-lokasi-type="Kalteng"></td>
                           <td><input type="text" class="form-control form-control-sm ppn" placeholder="0" readonly></td>
                           <td><input type="text" class="form-control form-control-sm total" placeholder="0" readonly></td>
-                          <td><input type="text" class="form-control form-control-sm transport" placeholder="0"></td>
+                          <td><input type="text" class="form-control form-control-sm transport" placeholder="0" value="600"></td>
                           <td><input type="text" class="form-control form-control-sm grand-total" placeholder="0" readonly></td>
                         </tr>
                         <tr data-lokasi="Kalteng" data-nama="Mustika Sembuluh" data-qty="5">
@@ -182,7 +182,7 @@
                           <td><input type="text" class="form-control form-control-sm harga-dasar" placeholder="0" data-lokasi-type="Kalteng"></td>
                           <td><input type="text" class="form-control form-control-sm ppn" placeholder="0" readonly></td>
                           <td><input type="text" class="form-control form-control-sm total" placeholder="0" readonly></td>
-                          <td><input type="text" class="form-control form-control-sm transport" placeholder="0"></td>
+                          <td><input type="text" class="form-control form-control-sm transport" placeholder="0" value="1000"></td>
                           <td><input type="text" class="form-control form-control-sm grand-total" placeholder="0" readonly></td>
                         </tr>
                         <tr data-lokasi="Kalteng" data-nama="Mustika Sembuluh" data-qty="10">
@@ -190,7 +190,7 @@
                           <td><input type="text" class="form-control form-control-sm harga-dasar" placeholder="0" data-lokasi-type="Kalteng"></td>
                           <td><input type="text" class="form-control form-control-sm ppn" placeholder="0" readonly></td>
                           <td><input type="text" class="form-control form-control-sm total" placeholder="0" readonly></td>
-                          <td><input type="text" class="form-control form-control-sm transport" placeholder="0"></td>
+                          <td><input type="text" class="form-control form-control-sm transport" placeholder="0" value="850"></td>
                           <td><input type="text" class="form-control form-control-sm grand-total" placeholder="0" readonly></td>
                         </tr>
                         <tr data-lokasi="Kalteng" data-nama="Desa Amin" data-qty="5">
@@ -199,7 +199,7 @@
                           <td><input type="text" class="form-control form-control-sm harga-dasar" placeholder="0" data-lokasi-type="Kalteng"></td>
                           <td><input type="text" class="form-control form-control-sm ppn" placeholder="0" readonly></td>
                           <td><input type="text" class="form-control form-control-sm total" placeholder="0" readonly></td>
-                          <td><input type="text" class="form-control form-control-sm transport" placeholder="0"></td>
+                          <td><input type="text" class="form-control form-control-sm transport" placeholder="0" value="1000"></td>
                           <td><input type="text" class="form-control form-control-sm grand-total" placeholder="0" readonly></td>
                         </tr>
                         <tr data-lokasi="Kalteng" data-nama="Desa Amin" data-qty="10">
@@ -207,7 +207,7 @@
                           <td><input type="text" class="form-control form-control-sm harga-dasar" placeholder="0" data-lokasi-type="Kalteng"></td>
                           <td><input type="text" class="form-control form-control-sm ppn" placeholder="0" readonly></td>
                           <td><input type="text" class="form-control form-control-sm total" placeholder="0" readonly></td>
-                          <td><input type="text" class="form-control form-control-sm transport" placeholder="0"></td>
+                          <td><input type="text" class="form-control form-control-sm transport" placeholder="0" value="850"></td>
                           <td><input type="text" class="form-control form-control-sm grand-total" placeholder="0" readonly></td>
                         </tr>
                         <tr data-lokasi="Kalteng" data-nama="Gunung Makmur" data-qty="5">
@@ -216,7 +216,7 @@
                           <td><input type="text" class="form-control form-control-sm harga-dasar" placeholder="0" data-lokasi-type="Kalteng"></td>
                           <td><input type="text" class="form-control form-control-sm ppn" placeholder="0" readonly></td>
                           <td><input type="text" class="form-control form-control-sm total" placeholder="0" readonly></td>
-                          <td><input type="text" class="form-control form-control-sm transport" placeholder="0"></td>
+                          <td><input type="text" class="form-control form-control-sm transport" placeholder="0" value="880"></td>
                           <td><input type="text" class="form-control form-control-sm grand-total" placeholder="0" readonly></td>
                         </tr>
                         <tr data-lokasi="Kalteng" data-nama="Gunung Makmur" data-qty="10">
@@ -224,7 +224,7 @@
                           <td><input type="text" class="form-control form-control-sm harga-dasar" placeholder="0" data-lokasi-type="Kalteng"></td>
                           <td><input type="text" class="form-control form-control-sm ppn" placeholder="0" readonly></td>
                           <td><input type="text" class="form-control form-control-sm total" placeholder="0" readonly></td>
-                          <td><input type="text" class="form-control form-control-sm transport" placeholder="0"></td>
+                          <td><input type="text" class="form-control form-control-sm transport" placeholder="0" value="760"></td>
                           <td><input type="text" class="form-control form-control-sm grand-total" placeholder="0" readonly></td>
                         </tr>
                         <tr data-lokasi="Kalteng" data-nama="Simpang Seluncing" data-qty="5">
@@ -233,7 +233,7 @@
                           <td><input type="text" class="form-control form-control-sm harga-dasar" placeholder="0" data-lokasi-type="Kalteng"></td>
                           <td><input type="text" class="form-control form-control-sm ppn" placeholder="0" readonly></td>
                           <td><input type="text" class="form-control form-control-sm total" placeholder="0" readonly></td>
-                          <td><input type="text" class="form-control form-control-sm transport" placeholder="0"></td>
+                          <td><input type="text" class="form-control form-control-sm transport" placeholder="0" value="830"></td>
                           <td><input type="text" class="form-control form-control-sm grand-total" placeholder="0" readonly></td>
                         </tr>
                         <tr data-lokasi="Kalteng" data-nama="Simpang Seluncing" data-qty="10">
@@ -241,7 +241,7 @@
                           <td><input type="text" class="form-control form-control-sm harga-dasar" placeholder="0" data-lokasi-type="Kalteng"></td>
                           <td><input type="text" class="form-control form-control-sm ppn" placeholder="0" readonly></td>
                           <td><input type="text" class="form-control form-control-sm total" placeholder="0" readonly></td>
-                          <td><input type="text" class="form-control form-control-sm transport" placeholder="0"></td>
+                          <td><input type="text" class="form-control form-control-sm transport" placeholder="0" value="700"></td>
                           <td><input type="text" class="form-control form-control-sm grand-total" placeholder="0" readonly></td>
                         </tr>
                       </tbody>
