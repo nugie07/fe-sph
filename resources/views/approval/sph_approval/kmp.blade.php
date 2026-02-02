@@ -7,6 +7,14 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
+        <!-- PDF Preview (sama seperti modal default - dari preview file) -->
+        <div class="mb-4" id="kmp-pdf-preview-container">
+          <label class="fw-bold mb-2">Preview SPH Document</label>
+          <div class="border rounded p-2" style="background-color: #f8f9fa;">
+            <iframe id="kmp-pdf-preview" src="" style="width: 100%; height: 600px; border: none;" frameborder="0"></iframe>
+          </div>
+        </div>
+
         <!-- Table detail -->
         <table class="table table-bordered mb-4">
           <tbody>
@@ -21,11 +29,11 @@
         </table>
 
         <!-- Detail OAT per Customer (Kalsel & Kalteng) -->
-        <div class="mb-4">
-          <label class="fw-bold mb-2 fs-5">Detail OAT per Customer</label>
+        <!-- <div class="mb-4"> -->
+         <!-- <label class="fw-bold mb-2 fs-5">Detail OAT per Customer</label> -->
           
           <!-- Tabel Lokasi Kalsel -->
-          <div class="mb-4">
+          <!-- <div class="mb-4">
             <h6 class="fw-bold mb-2">Lokasi Kalsel</h6>
             <div class="table-responsive theme-scrollbar">
               <table class="display table table-bordered" id="table-kmp-kalsel" style="width:100%">
@@ -45,7 +53,6 @@
             </div>
           </div>
 
-          <!-- Tabel Lokasi Kalteng -->
           <div class="mb-4">
             <h6 class="fw-bold mb-2">Lokasi Kalteng</h6>
             <div class="table-responsive theme-scrollbar">
@@ -64,7 +71,7 @@
                 <tbody></tbody>
               </table>
             </div>
-          </div>
+          </div> -->
         </div>
 
         <!-- Riwayat Remark Approval -->
@@ -119,6 +126,16 @@
 
   // Function to show KMP approval modal - make it globally accessible
   window.showKmpApprovalModal = function(sphId, item) {
+    // Set PDF Preview dari temp_file (sama seperti modal default)
+    var tempFile = item && item.temp_file ? item.temp_file : '';
+    if (tempFile) {
+      $('#kmp-pdf-preview').attr('src', tempFile);
+      $('#kmp-pdf-preview-container').show();
+    } else {
+      $('#kmp-pdf-preview-container').hide();
+      $('#kmp-pdf-preview').attr('src', '');
+    }
+
     // Clear previous data
     $('#kmp-detail-tipe-sph').text('');
     $('#kmp-detail-no-sph').text('');

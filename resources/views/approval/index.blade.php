@@ -1078,6 +1078,11 @@
         $('#modalConfirmation').modal('show');
       });
 
+      // Clear PDF preview when default SPH modal is closed
+      $('#modalConfirmation').on('hidden.bs.modal', function() {
+        $('#pdf-preview').attr('src', '');
+      });
+
       // Handler tombol Simpan di modal
       $(document).on('click', '#btnSaveApproval', function() {
         var sphId = $('#modalConfirmation').data('sph-id');
