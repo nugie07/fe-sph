@@ -88,8 +88,11 @@
             <h4 class="mb-0">Data Pembayaran PO</h4>
             <span>Data semua pembayaran PO untuk Supplier atau Transporter </span>
         </div>
-        <div class="d-flex gap-2 mt-2 mt-md-0 align-items-center ms-auto">
-
+        <div class="d-flex gap-2 mt-2 mt-md-0 align-items-center ms-auto flex-wrap">
+            <div class="d-flex align-items-center gap-1">
+                <label for="filter-tgl-po" class="form-label mb-0 small text-muted">Tanggal PO:</label>
+                <input type="text" class="form-control form-control-sm" id="filter-tgl-po" placeholder="Pilih tanggal" style="width:140px;" readonly>
+            </div>
             <select class="form-select" id="filter-status" style="width:200px;max-width:220px;">
                 <option value="">Semua Status</option>
                 <option value="pending">Belum Dibayar</option>
@@ -100,6 +103,7 @@
               <option value="1">Supplier</option>
               <option value="2">Transporter</option>
             </select>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-clear-filter" title="Reset filter">Clear</button>
         </div>
     </div>
       <div class="card-body">
@@ -110,6 +114,7 @@
                 <th>No</th>
                 <th>Tipe PO</th>
                 <th>Nomer PO</th>
+                <th>Tanggal PO</th>
                 <th>Payment Term</th>
                 <th>Nama Supplier / Transportir</th>
                 <th>Nilai PO (Rp)</th>
@@ -257,6 +262,7 @@ $(document).ready(function() {
             data: function(d) {
                     d.filter_status = $('#filter-status').val();
                     d.filter_category = $('#filter-category').val();
+                    d.filter_tgl_po = $('#filter-tgl-po').val() || '';
                 },
                 dataSrc: 'data'
             },
@@ -275,6 +281,16 @@ $(document).ready(function() {
                     }
                 },
                 { data: 'vendor_po', defaultContent: '-' },
+                {
+                    data: 'tgl_po',
+                    defaultContent: '-',
+                    render: function(data) {
+                        if (!data) return '-';
+                        var d = new Date(data);
+                        if (isNaN(d.getTime())) return data;
+                        return d.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                    }
+                },
                 { data: 'term', defaultContent: '-' },
                 { data: 'vendor_name', defaultContent: '-' },
                 {
@@ -336,6 +352,27 @@ $(document).ready(function() {
     });
 
     $('#filter-category').on('change', function() {
+        reloadData();
+    });
+
+    // Date picker untuk filter Tanggal PO
+    $('#filter-tgl-po').datepicker({
+        language: 'en',
+        dateFormat: 'yyyy-mm-dd',
+        autoClose: true,
+        onSelect: function() {
+            reloadData();
+        }
+    });
+
+    $('#filter-tgl-po').on('change', function() {
+        reloadData();
+    });
+
+    $('#btn-clear-filter').on('click', function() {
+        $('#filter-tgl-po').val('');
+        $('#filter-status').val('');
+        $('#filter-category').val('');
         reloadData();
     });
 

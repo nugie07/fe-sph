@@ -182,7 +182,7 @@
                                 <th style="width: 15%;">Quantity</th>
                                 <th style="width: 20%;">Harga</th>
                                 <th style="width: 15%;">Jumlah</th>
-                                <th style="width: 6%;">#</th>
+                                <th style="width: 10%;"># - Tandai Transport</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -214,8 +214,8 @@
                             <span>PPN (11%):</span>
                             <span id="tax">0</span>
                         </div>
-                        <div class="d-flex justify-content-between">
-                            <span>PBBKB (7,5%):</span>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>PBBKB <input type="checkbox" id="pbbkb-apply" class="form-check-input align-middle ms-1" checked title="Centang untuk menerapkan PBBKB 7,5%"> (7,5%):</span>
                             <span id="pbbkb">0</span>
                         </div>
                         <div class="d-flex justify-content-between align-items-center">
@@ -570,7 +570,7 @@ $(document).ready(function() {
                                         <td><input type="number" name="details[][qty]" class="form-control item-qty" value="${qty}" min="1" required></td>
                                         <td><input type="number" name="details[][harga]" class="form-control item-price" value="${harga}" min="0" required></td>
                                         <td class="row-total text-end align-middle">${formatRupiah(total)}</td>
-                                        <td class="text-center align-middle"><button type="button" class="btn btn-delete-item">×</button></td>
+                                        <td class="text-center align-middle"><label class="mb-0 me-1"><input type="checkbox" class="item-transport-check" name="details[][tandai_transport]" value="1"></label><button type="button" class="btn btn-delete-item">×</button></td>
                                     </tr>
                                 `;
                                 $('#invoice-items-table tbody').append(newRow);
@@ -888,15 +888,20 @@ $(document).ready(function() {
 
     function calculateGrandTotal() {
         let subtotal = 0;
+        let pph23Base = 0; // Sum of Jumlah only for rows with "Tandai Transport" checked
         $('#invoice-items-table tbody tr').each(function() {
             let qty = parseFloat($(this).find('.item-qty').val()) || 0;
             let price = parseFloat($(this).find('.item-price').val()) || 0;
-            subtotal += qty * price;
+            let rowTotal = qty * price;
+            subtotal += rowTotal;
+            if ($(this).find('.item-transport-check').is(':checked')) {
+                pph23Base += rowTotal;
+            }
         });
         let tax = subtotal * 0.11;
-        let pbbkb = subtotal * 0.075;
-        // PPH 23 auto-calculate (2% of subtotal), but field is editable
-        let pph23Auto = subtotal * 0.02;
+        let pbbkb = $('#pbbkb-apply').is(':checked') ? (subtotal * 0.075) : 0;
+        // PPH 23 = 2% of sum of Jumlah for checked "Tandai Transport" rows only
+        let pph23Auto = pph23Base * 0.02;
         let pph23 = 0;
         
         // Only auto-update PPH 23 if it hasn't been manually edited
@@ -943,7 +948,7 @@ $(document).ready(function() {
                 <td><input type="number" name="details[][qty]" class="form-control item-qty" value="1" min="1" required></td>
                 <td><input type="number" name="details[][harga]" class="form-control item-price" value="0" min="0" required></td>
                 <td class="row-total text-end align-middle">0</td>
-                <td class="text-center align-middle"><button type="button" class="btn btn-delete-item">×</button></td>
+                <td class="text-center align-middle"><label class="mb-0 me-1"><input type="checkbox" class="item-transport-check" name="details[][tandai_transport]" value="1"></label><button type="button" class="btn btn-delete-item">×</button></td>
             </tr>
         `;
         $('#invoice-items-table tbody').append(newRow);
@@ -953,6 +958,14 @@ $(document).ready(function() {
     $('#invoice-items-table').on('click', '.btn-delete-item', function() {
         $(this).closest('tr').remove();
         refreshTableNo();
+        calculateGrandTotal();
+    });
+
+    $('#invoice-items-table').on('change', '.item-transport-check', function() {
+        calculateGrandTotal();
+    });
+
+    $('#pbbkb-apply').on('change', function() {
         calculateGrandTotal();
     });
 
@@ -979,7 +992,7 @@ $(document).ready(function() {
                     <td><input type="number" name="details[][qty]" class="form-control item-qty" value="${qty}" min="1" required></td>
                     <td><input type="number" name="details[][harga]" class="form-control item-price" value="${harga}" min="0" required></td>
                     <td class="row-total text-end align-middle">${formatRupiah(total)}</td>
-                    <td class="text-center align-middle"><button type="button" class="btn btn-delete-item">×</button></td>
+                    <td class="text-center align-middle"><label class="mb-0 me-1"><input type="checkbox" class="item-transport-check" name="details[][tandai_transport]" value="1"></label><button type="button" class="btn btn-delete-item">×</button></td>
                 </tr>
             `;
             $('#invoice-items-table tbody').append(newRow);
@@ -1426,13 +1439,15 @@ $(document).ready(function() {
             const namaItem = $(this).find('input[name*="[nama_item]"]').val();
             const qty = $(this).find('input[name*="[qty]"]').val();
             const harga = $(this).find('input[name*="[harga]"]').val();
+            const tandaiTransport = $(this).find('.item-transport-check').is(':checked') ? '1' : '0';
 
-            console.log('Row data:', { namaItem, qty, harga }); // Debug log
+            console.log('Row data:', { namaItem, qty, harga, tandaiTransport }); // Debug log
 
             if (namaItem && qty && harga) {
                 formData.append(`details[${detailIndex}][nama_item]`, namaItem);
                 formData.append(`details[${detailIndex}][qty]`, qty);
                 formData.append(`details[${detailIndex}][harga]`, harga);
+                formData.append(`details[${detailIndex}][tandai_transport]`, tandaiTransport);
                 detailIndex++;
             }
         });

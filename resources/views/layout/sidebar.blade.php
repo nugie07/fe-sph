@@ -131,6 +131,9 @@ use App\Helpers\PermissionHelper;
                 @if(PermissionHelper::hasPermission('admin.menu'))
                 <li><a href="{{route('permission-management')}}">Permission Management</a></li>
                 @endif
+                @if(PermissionHelper::hasPermission('admin.sph_monitoring'))
+                <li><a href="{{route('sph-monitoring')}}">SPH Monitoring</a></li>
+                @endif
               </ul>
             </li>
             @endif

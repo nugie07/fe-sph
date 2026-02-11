@@ -563,7 +563,13 @@ function renderFileBtn(item) {
     // 4. UTILITIES & INIT
     // ==========================================
     function formatRupiah(x){ return 'Rp ' + (parseFloat(x)||0).toLocaleString('id-ID',{ minimumFractionDigits:2 }); }
-    function parseCurrencyValue(v){ return parseFloat(v.replace(/[^\d]/g, '')) || 0; }
+    // Parse Rupiah: 505.000.000,00 -> 505000000 (dot=ribuan, koma=desimal). Jangan strip semua non-digit atau ,00 jadi 00.
+    function parseCurrencyValue(v){
+        if (!v || (typeof v === 'string' && v.trim() === '')) return 0;
+        var s = v.toString().replace(/[^\d,.]/g, '');
+        var n = s.replace(/\./g, '').replace(',', '.');
+        return parseFloat(n) || 0;
+    }
     function parseCurrencyValueDecimal(v){ 
         if (!v || v.trim() === '') return 0;
         // Remove Rp, spaces, and keep numbers, comma, and dot

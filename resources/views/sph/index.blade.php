@@ -19,8 +19,11 @@ use App\Helpers\PermissionHelper;
 <div class="modal fade" id="pdfViewerModal" tabindex="-1" aria-labelledby="pdfViewerModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-xl" style="max-width:90%;">
     <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Lihat Dokumen SPH (PDF)</h5>
+      <div class="modal-header d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-2">
+          <h5 class="modal-title mb-0">Lihat Dokumen SPH (PDF)</h5>
+          <button type="button" class="btn btn-sm btn-outline-primary" id="btn-recreate-pdf-sph" title="Recreate PDF">Recreate</button>
+        </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
       </div>
       <div class="modal-body" style="height: 80vh;">
@@ -710,7 +713,39 @@ use App\Helpers\PermissionHelper;
             return;
         }
         $('#pdfViewerFrame').attr('src', item.file_sph);
+        $('#pdfViewerModal').data('sph-id', item.id || item.sph_id);
         $('#pdfViewerModal').modal('show');
+    });
+
+    $(document).on('click', '#btn-recreate-pdf-sph', function() {
+        var sphId = $('#pdfViewerModal').data('sph-id');
+        if (!sphId) {
+            Swal.fire('Oops!', 'SPH ID tidak ditemukan.', 'warning');
+            return;
+        }
+        var $btn = $(this);
+        $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
+        $.ajax({
+            url: '/api/sph/' + sphId + '/recreate-pdf',
+            type: 'POST',
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+            contentType: 'application/json',
+            data: JSON.stringify({}),
+            success: function(res) {
+                $btn.prop('disabled', false).html('Recreate');
+                if (res && res.success) {
+                    Swal.fire('Berhasil', res.message || 'PDF sedang digenerate ulang.', 'success');
+                    $('#pdfViewerModal').modal('hide');
+                    if (typeof fetchSphWithFilter === 'function') fetchSphWithFilter();
+                } else {
+                    Swal.fire('Gagal', (res && res.message) || 'Gagal recreate PDF', 'error');
+                }
+            },
+            error: function(xhr) {
+                $btn.prop('disabled', false).html('Recreate');
+                Swal.fire('Gagal', (xhr.responseJSON && xhr.responseJSON.message) || 'Gagal recreate PDF', 'error');
+            }
+        });
     });
 
     // 9) Initial load (langsung dengan filter all)

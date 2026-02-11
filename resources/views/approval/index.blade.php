@@ -222,32 +222,18 @@
       <div class="modal-body">
         <!-- PDF Preview -->
         <div class="mb-4" id="pdf-preview-container">
-          <label class="fw-bold mb-2">Preview SPH Document</label>
-          <div class="border rounded p-2" style="background-color: #f8f9fa;">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <label class="fw-bold mb-0">Preview SPH Document</label>
+            <button type="button" class="btn btn-sm btn-outline-primary" id="btn-recreate-pdf-approval" title="Recreate PDF">Recreate</button>
+          </div>
+          <div id="pdf-preview-placeholder" class="border rounded p-4 text-center align-items-center justify-content-center d-none" style="background-color: #f8f9fa; min-height: 200px;">
+            <span class="text-muted">File Review sedang process dibuat</span>
+          </div>
+          <div id="pdf-preview-iframe-wrap" class="border rounded p-2" style="background-color: #f8f9fa;">
             <iframe id="pdf-preview" src="" style="width: 100%; height: 600px; border: none;" frameborder="0"></iframe>
           </div>
         </div>
 
-        <!-- Detail Lines (Kencana) -->
-        <!-- <div class="mb-4" id="kencana-details" style="display:none;">
-          <label class="fw-bold mb-2">Detail Item</label>
-          <div class="table-responsive theme-scrollbar">
-            <table class="display table" id="table-kencana-lines" style="width:100%">
-              <thead>
-                <tr>
-                  <th>Customer</th>
-                  <th>Qty</th>
-                  <th>Harga Dasar</th>
-                  <th>PPN</th>
-                  <th>PBBKB</th>
-                  <th>Total</th>
-                  <th>Lokasi</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        </div> -->
 
         <!-- Riwayat Remark Approval -->
         <div class="mb-4">
@@ -731,11 +717,14 @@
 
         // Set PDF Preview
         var tempFile = item && item.temp_file ? item.temp_file : '';
+        $('#pdf-preview-container').show();
         if (tempFile) {
+          $('#pdf-preview-iframe-wrap').show();
+          $('#pdf-preview-placeholder').addClass('d-none');
           $('#pdf-preview').attr('src', tempFile);
-          $('#pdf-preview-container').show();
         } else {
-          $('#pdf-preview-container').hide();
+          $('#pdf-preview-iframe-wrap').hide();
+          $('#pdf-preview-placeholder').removeClass('d-none');
           $('#pdf-preview').attr('src', '');
         }
 
@@ -1081,6 +1070,37 @@
       // Clear PDF preview when default SPH modal is closed
       $('#modalConfirmation').on('hidden.bs.modal', function() {
         $('#pdf-preview').attr('src', '');
+      });
+
+      $(document).on('click', '#btn-recreate-pdf-approval', function() {
+        var sphId = $('#modalConfirmation').data('sph-id');
+        if (!sphId) {
+          Swal.fire('Oops!', 'SPH ID tidak ditemukan.', 'warning');
+          return;
+        }
+        var $btn = $(this);
+        $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
+        $.ajax({
+          url: '/api/sph/' + sphId + '/recreate-pdf',
+          type: 'POST',
+          headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+          contentType: 'application/json',
+          data: JSON.stringify({}),
+          success: function(res) {
+            $btn.prop('disabled', false).html('Recreate');
+            if (res && res.success) {
+              Swal.fire('Berhasil', res.message || 'PDF sedang digenerate ulang.', 'success');
+              $('#modalConfirmation').modal('hide');
+              if (typeof fetchSph === 'function') fetchSph();
+            } else {
+              Swal.fire('Gagal', (res && res.message) || 'Gagal recreate PDF', 'error');
+            }
+          },
+          error: function(xhr) {
+            $btn.prop('disabled', false).html('Recreate');
+            Swal.fire('Gagal', (xhr.responseJSON && xhr.responseJSON.message) || 'Gagal recreate PDF', 'error');
+          }
+        });
       });
 
       // Handler tombol Simpan di modal

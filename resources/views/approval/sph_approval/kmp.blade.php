@@ -9,8 +9,14 @@
       <div class="modal-body">
         <!-- PDF Preview (sama seperti modal default - dari preview file) -->
         <div class="mb-4" id="kmp-pdf-preview-container">
-          <label class="fw-bold mb-2">Preview SPH Document</label>
-          <div class="border rounded p-2" style="background-color: #f8f9fa;">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <label class="fw-bold mb-0">Preview SPH Document</label>
+            <button type="button" class="btn btn-sm btn-outline-primary" id="btn-recreate-pdf-kmp" title="Recreate PDF">Recreate</button>
+          </div>
+          <div id="kmp-pdf-preview-placeholder" class="border rounded p-4 text-center align-items-center justify-content-center d-none" style="background-color: #f8f9fa; min-height: 200px;">
+            <span class="text-muted">File Review sedang process dibuat</span>
+          </div>
+          <div id="kmp-pdf-preview-iframe-wrap" class="border rounded p-2" style="background-color: #f8f9fa;">
             <iframe id="kmp-pdf-preview" src="" style="width: 100%; height: 600px; border: none;" frameborder="0"></iframe>
           </div>
         </div>
@@ -28,50 +34,7 @@
           </tbody>
         </table>
 
-        <!-- Detail OAT per Customer (Kalsel & Kalteng) -->
-        <!-- <div class="mb-4"> -->
-         <!-- <label class="fw-bold mb-2 fs-5">Detail OAT per Customer</label> -->
-          
-          <!-- Tabel Lokasi Kalsel -->
-          <!-- <div class="mb-4">
-            <h6 class="fw-bold mb-2">Lokasi Kalsel</h6>
-            <div class="table-responsive theme-scrollbar">
-              <table class="display table table-bordered" id="table-kmp-kalsel" style="width:100%">
-                <thead>
-                  <tr>
-                    <th>Lokasi Kalsel</th>
-                    <th>Qty / KL</th>
-                    <th>Harga Dasar</th>
-                    <th>PPN</th>
-                    <th>Total</th>
-                    <th>Transport</th>
-                    <th>Grand Total</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
-            </div>
-          </div>
-
-          <div class="mb-4">
-            <h6 class="fw-bold mb-2">Lokasi Kalteng</h6>
-            <div class="table-responsive theme-scrollbar">
-              <table class="display table table-bordered" id="table-kmp-kalteng" style="width:100%">
-                <thead>
-                  <tr>
-                    <th>Lokasi Kalteng</th>
-                    <th>Qty / KL</th>
-                    <th>Harga Dasar</th>
-                    <th>PPN</th>
-                    <th>Total</th>
-                    <th>Transport</th>
-                    <th>Grand Total</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
-            </div>
-          </div> -->
+        
         </div>
 
         <!-- Riwayat Remark Approval -->
@@ -128,11 +91,14 @@
   window.showKmpApprovalModal = function(sphId, item) {
     // Set PDF Preview dari temp_file (sama seperti modal default)
     var tempFile = item && item.temp_file ? item.temp_file : '';
+    $('#kmp-pdf-preview-container').show();
     if (tempFile) {
+      $('#kmp-pdf-preview-iframe-wrap').show();
+      $('#kmp-pdf-preview-placeholder').addClass('d-none');
       $('#kmp-pdf-preview').attr('src', tempFile);
-      $('#kmp-pdf-preview-container').show();
     } else {
-      $('#kmp-pdf-preview-container').hide();
+      $('#kmp-pdf-preview-iframe-wrap').hide();
+      $('#kmp-pdf-preview-placeholder').removeClass('d-none');
       $('#kmp-pdf-preview').attr('src', '');
     }
 
@@ -367,6 +333,38 @@
     // Show modal
     $('#modalConfirmationKmp').modal('show');
   };
+
+  $(document).on('click', '#btn-recreate-pdf-kmp', function() {
+    var sphId = $('#modalConfirmationKmp').data('sph-id');
+    if (!sphId) {
+      Swal.fire('Oops!', 'SPH ID tidak ditemukan.', 'warning');
+      return;
+    }
+    var $btn = $(this);
+    $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
+    $.ajax({
+      url: '/api/sph/' + sphId + '/recreate-pdf',
+      type: 'POST',
+      headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+      contentType: 'application/json',
+      data: JSON.stringify({}),
+      success: function(res) {
+        $btn.prop('disabled', false).html('Recreate');
+        if (res && res.success) {
+          Swal.fire('Berhasil', res.message || 'PDF sedang digenerate ulang.', 'success');
+          $('#modalConfirmationKmp').modal('hide');
+          if (typeof fetchSph === 'function') fetchSph();
+          else window.location.reload();
+        } else {
+          Swal.fire('Gagal', (res && res.message) || 'Gagal recreate PDF', 'error');
+        }
+      },
+      error: function(xhr) {
+        $btn.prop('disabled', false).html('Recreate');
+        Swal.fire('Gagal', (xhr.responseJSON && xhr.responseJSON.message) || 'Gagal recreate PDF', 'error');
+      }
+    });
+  });
 
   // Handler tombol Simpan di modal KMP
   $(document).on('click', '#btnSaveApprovalKmp', function() {

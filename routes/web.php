@@ -149,6 +149,7 @@ Route::view('user-management', 'user_management.index')->name('user-management')
 Route::view('manual-guide', 'manual.manual')->name('manual-guide')->middleware('permission:admin.manual');
 Route::view('manual-books', 'manual.books')->name('manual-books');
 Route::view('permission-management', 'user_management.permission')->name('permission-management')->middleware('permission:admin.menu');
+Route::view('sph-monitoring', 'sph_monitoring.index')->name('sph-monitoring')->middleware('permission:admin.sph_monitoring');
 Route::view('user-log', 'user_management.userlog')->name('user-log')->middleware('permission:admin.logging');
 Route::view('invoice', 'invoice.index')->name('invoice')->middleware('permission:fin.menu');
 Route::view('master-engine', 'user_management.workflow')->name('master-engine')->middleware('permission:master.engine');

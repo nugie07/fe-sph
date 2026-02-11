@@ -296,7 +296,9 @@
 
                     if (response.success && response.data) {
                         response.data.forEach(function(customer) {
-                            $customerSelect.append(`<option value="${customer.id}">${customer.name} (${customer.alias})</option>`);
+                            const type = customer.type || '';
+                            const label = type ? `${customer.name} - ${type}` : (customer.name || '');
+                            $customerSelect.append(`<option value="${customer.id}">${label}</option>`);
                         });
                     }
 

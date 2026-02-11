@@ -11,6 +11,9 @@
 <link
   href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css"
   rel="stylesheet"/>
+<style>
+#btn-clear-invoice-filter:hover { background:#C7A24B !important; color:#fff !important; border-color:#C7A24B !important; }
+</style>
 @endsection
 
 @section('main_content')
@@ -121,7 +124,7 @@
               <h4 class="mb-0">Invoice Management</h4>
               <span>Data semua invoice untuk finance tracking dan manajemen</span>
             </div>
-            <div class="d-flex gap-2 mt-2 mt-md-0 align-items-center ms-auto">
+            <div class="d-flex gap-2 mt-2 mt-md-0 align-items-center ms-auto flex-wrap">
               <button type="button" class="btn btn-success" id="btn-create-invoice" style="color:#fff; border-radius:8px; padding:8px 16px; display:flex; align-items:center; gap:8px;" title="Buat Proforma Invoice Baru" onclick="window.location.href='/invoice/create'">
                   <i class="fa fa-plus"></i>
                   <span> Invoice</span>
@@ -130,6 +133,10 @@
                   <i class="fa fa-plus"></i>
                   <span> Proforma Invoice</span>
               </button>
+              <div class="d-flex align-items-center gap-1">
+                <label for="filter-invoice-date" class="form-label mb-0 small text-muted">Invoice Date:</label>
+                <input type="text" class="form-control form-control-sm" id="filter-invoice-date" placeholder="Pilih tanggal" style="width:140px;" readonly>
+              </div>
               <select class="form-select" id="filter-status" style="width:200px;max-width:220px;">
                 <option value="">Semua Status</option>
                 <option value="0">Belum Dibayar</option>
@@ -140,6 +147,7 @@
                 <option value="1">Invoices</option>
                 <option value="2">Proforma</option>
               </select>
+              <button type="button" class="btn btn-sm ms-2" id="btn-clear-invoice-filter" title="Reset filter" style="border-radius:9999px; border:1px solid #C7A24B; color:#C7A24B; background:#fff;">Clear</button>
             </div>
           </div>
           <div class="card-body">
@@ -150,6 +158,7 @@
                     <th>No</th>
                     <th>Tipe</th>
                     <th>Invoice No</th>
+                    <th>Tanggal Invoice</th>
                     <th>Customer PO</th>
                     <th>Nama Customer</th>
                     <th>Total Nilai Invoice (Rp)</th>
@@ -339,6 +348,9 @@
 @endsection
 
 @section('scripts')
+<script src="{{ asset('assets/js/datepicker/date-picker/datepicker.js') }}"></script>
+<script src="{{ asset('assets/js/datepicker/date-picker/datepicker.en.js') }}"></script>
+<script src="{{ asset('assets/js/datepicker/date-picker/datepicker.custom.js') }}"></script>
 <script src="{{ asset('assets/js/datatable/datatables/jquery.dataTables.min.js') }}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -398,6 +410,8 @@ $(document).ready(function() {
             data: d => {
                 d.status = $('#filter-status').val();
                 d.type = $('#filter-type').val();
+                var invoiceDate = $('#filter-invoice-date').val();
+                if (invoiceDate) d.invoice_date = invoiceDate;
             },
             dataSrc: 'data'
         },
@@ -415,6 +429,16 @@ $(document).ready(function() {
                 }
             },
             { data: 'invoice_no', defaultContent: '-' },
+            {
+                data: 'invoice_date',
+                defaultContent: '-',
+                render: function(data) {
+                    if (!data) return '-';
+                    var d = new Date(data);
+                    if (isNaN(d.getTime())) return data;
+                    return d.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                }
+            },
             { data: 'po_no', defaultContent: '-' },
             { data: 'bill_to', defaultContent: '-' },
             { data: 'total', render: data => formatRupiah(data) },
@@ -487,11 +511,30 @@ $(document).ready(function() {
                     return '';
                 }
             }
-        ]
+        ],
+        initComplete: function() {}
     });
 
     $('#filter-status').on('change', reloadTable);
     $('#filter-type').on('change', reloadTable);
+
+    $('#btn-clear-invoice-filter').on('click', function() {
+        $('#filter-invoice-date').val('');
+        $('#filter-status').val('');
+        $('#filter-type').val('');
+        reloadTable();
+    });
+
+    $('#filter-invoice-date').datepicker({
+        language: 'en',
+        dateFormat: 'yyyy-mm-dd',
+        autoClose: true,
+        onSelect: function() {
+            reloadTable();
+        }
+    });
+    $('#filter-invoice-date').on('change', reloadTable);
+
     loadSummaryData();
 
     // Fungsi untuk membuka modal detail
