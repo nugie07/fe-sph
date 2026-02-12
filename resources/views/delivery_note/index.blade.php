@@ -1049,6 +1049,18 @@ $(document).ready(function() {
         return d.name !== 'drs_no';
     });
 
+    // dn_no di payload harus dari value dn_no_text (bukan value select dn_no)
+    var dnNoTextVal = ($('#dn_no_text').val() || '').trim();
+    data = data.map(function(d) {
+      if (d.name === 'dn_no') {
+        return { name: 'dn_no', value: dnNoTextVal || ($('#dn_no').val() || '') };
+      }
+      return d;
+    });
+    if (!data.some(function(d) { return d.name === 'dn_no'; })) {
+      data.push({ name: 'dn_no', value: dnNoTextVal || ($('#dn_no').val() || '') });
+    }
+
     // FORCE include hidden status value (overwrite if double)
     let statusVal = $('#status').val();
     let foundStatus = false;
