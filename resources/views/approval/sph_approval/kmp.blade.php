@@ -6,7 +6,7 @@
         <h5 class="modal-title fw-bold text-dark" id="modalConfirmationKmpLabel">Detail SPH - KMP</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body" style="max-height: 85vh; overflow-y: auto;">
         <!-- PDF Preview (sama seperti modal default - dari preview file) -->
         <div class="mb-4" id="kmp-pdf-preview-container">
           <div class="d-flex justify-content-between align-items-center mb-2">
@@ -17,7 +17,7 @@
             <span class="text-muted">File Review sedang process dibuat</span>
           </div>
           <div id="kmp-pdf-preview-iframe-wrap" class="border rounded p-2" style="background-color: #f8f9fa;">
-            <iframe id="kmp-pdf-preview" src="" style="width: 100%; height: 600px; border: none;" frameborder="0"></iframe>
+            <iframe id="kmp-pdf-preview" src="" style="width: 100%; height: 400px; max-height: 50vh; border: none;" frameborder="0"></iframe>
           </div>
         </div>
 
@@ -33,9 +33,6 @@
             <tr><th>Note Berlaku</th><td id="kmp-detail-note-berlaku"></td></tr>
           </tbody>
         </table>
-
-        
-        </div>
 
         <!-- Riwayat Remark Approval -->
         <div class="mb-4">

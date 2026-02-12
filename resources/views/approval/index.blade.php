@@ -213,13 +213,13 @@
 
 <!-- SPH Modal Detail Confirmation -->
 <div class="modal fade" id="modalConfirmation" tabindex="-1" aria-labelledby="modalConfirmationLabel" aria-hidden="true">
-  <div class="modal-dialog modal-xl modal-dialog-centered">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header bg-light">
         <h5 class="modal-title fw-bold text-dark" id="modalConfirmationLabel">Detail SPH</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body" style="max-height: 85vh; overflow-y: auto;">
         <!-- PDF Preview -->
         <div class="mb-4" id="pdf-preview-container">
           <div class="d-flex justify-content-between align-items-center mb-2">
@@ -230,7 +230,7 @@
             <span class="text-muted">File Review sedang process dibuat</span>
           </div>
           <div id="pdf-preview-iframe-wrap" class="border rounded p-2" style="background-color: #f8f9fa;">
-            <iframe id="pdf-preview" src="" style="width: 100%; height: 600px; border: none;" frameborder="0"></iframe>
+            <iframe id="pdf-preview" src="" style="width: 100%; height: 400px; max-height: 50vh; border: none;" frameborder="0"></iframe>
           </div>
         </div>
 
