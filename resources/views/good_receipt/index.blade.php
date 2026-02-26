@@ -77,7 +77,7 @@
         </div>
         <div>
           <button type="button" class="btn btn-primary me-2" id="btnTambahPO">
-            <i class="fa fa-plus me-1"></i> Tambah PO
+            <i class="fa fa-plus me-1"></i> Halaman Input PO Customer
           </button>
           <button type="button" class="btn btn-success" id="btnBulkPO">
             <i class="fa fa-list me-1"></i> Bulk
@@ -111,7 +111,7 @@
     <div class="modal-content">
       <form id="formTambahPO" enctype="multipart/form-data">
         <div class="modal-header">
-          <h5 class="modal-title fw-bold">Tambah PO</h5>
+          <h5 class="modal-title fw-bold">Halaman Input PO Customer</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body px-4 py-3">
@@ -224,6 +224,123 @@
   </div>
 </div>
 
+{{-- MODAL VIEW PO (read-only dari GET detail) --}}
+<div class="modal fade" id="modalViewPO" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">Detail PO Customer</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body px-4 py-3" id="modalViewPOBody">
+        <div class="text-center py-4"><span class="spinner-border text-primary"></span> Loading...</div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+        <a href="#" id="modalViewPOFileLink" class="btn btn-info d-none" target="_blank"><i class="fa fa-file-pdf-o me-1"></i> Lihat File PO</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{{-- MODAL REVISI PO (seperti create, Seq No / Nomer SPH / Nama Perusahaan readonly) --}}
+<div class="modal fade" id="modalRevisiPO" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <form id="formRevisiPO" enctype="multipart/form-data">
+        <input type="hidden" id="revisi-po-id" name="id">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">Revisi PO Customer</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body px-4 py-3">
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold small">Nomer SPH</label>
+              <input type="text" id="revisi-po-sph" class="form-control" readonly style="background-color:#f8f9fa;">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold small">Nama Perusahaan</label>
+              <input type="text" id="revisi-po-nama-perusahaan" class="form-control" readonly style="background-color:#f8f9fa;">
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label class="form-label fw-bold small">Nomer PO Customer <span class="text-danger">*</span></label>
+              <input type="text" id="revisi-po-no-customer" name="po_no" class="form-control" required>
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label fw-bold small">Wilayah</label>
+              <input type="text" id="revisi-po-wilayah" class="form-control" readonly style="background-color:#f8f9fa;">
+              <input type="hidden" id="revisi-po-wilayah-value" name="wilayah">
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label fw-bold small">Seq No</label>
+              <input type="text" id="revisi-po-seq" name="no_seq" class="form-control" readonly style="background-color:#f8f9fa;">
+            </div>
+          </div>
+          <input type="hidden" id="revisi-po-source" name="source">
+          <div class="row">
+            <div class="col-md-3 mb-3">
+              <label class="form-label fw-bold small">Request Date</label>
+              <input type="text" id="revisi-po-req-date" name="req_date" class="form-control" placeholder="yyyy-mm-dd">
+            </div>
+            <div class="col-md-3 mb-3">
+              <label class="form-label fw-bold small">Qty <span class="text-danger">*</span></label>
+              <input type="number" id="revisi-po-qty" name="qty" class="form-control" required min="1">
+            </div>
+            <div class="col-md-3 mb-3">
+              <label class="form-label fw-bold small">HSD Solar <span class="text-danger">*</span></label>
+              <input type="text" id="revisi-po-hsd-solar" class="form-control" required>
+            </div>
+            <div class="col-md-3 mb-3">
+              <label class="form-label fw-bold small">Ongkos Angkut</label>
+              <input type="text" id="revisi-po-ongkos-angkut" class="form-control">
+              <div class="form-check mt-2">
+                <input class="form-check-input" type="checkbox" id="revisi-po-include-ppn" name="include_ppn" value="1">
+                <label class="form-check-label fw-bold small" for="revisi-po-include-ppn">Include PPN</label>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label class="form-label fw-bold small">Sub Total</label>
+              <input type="text" id="revisi-po-subtotal" class="form-control" readonly style="background-color:#f8f9fa;">
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label fw-bold small">PPN 11%</label>
+              <input type="text" id="revisi-po-ppn" class="form-control" readonly style="background-color:#f8f9fa;">
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label fw-bold small">PBBKB</label>
+              <input type="text" id="revisi-po-pbbkb" name="pbbkb" class="form-control">
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label class="form-label fw-bold small">PPH 23</label>
+              <input type="text" id="revisi-po-pph" name="pph" class="form-control">
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label fw-bold small">Total</label>
+              <input type="text" id="revisi-po-total" name="total" class="form-control" readonly style="background-color:#f8f9fa;">
+              <div class="mt-2 small">Terbilang: <span id="revisi-po-terbilang" class="text-primary fw-bold"></span></div>
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label fw-bold small">Upload File PO (opsional)</label>
+              <input type="file" id="revisi-po-file" name="file" class="form-control" accept=".pdf,.doc,.docx">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+          <button type="submit" class="btn btn-primary" id="btnSimpanRevisiPO">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 {{-- MODAL BULK PO --}}
 <div class="modal fade" id="modalBulkPO" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered" style="max-width: 98%;">
@@ -329,6 +446,8 @@ function renderSphNo(item) {
         return '-';
     }
 
+var goodReceiptListData = []; // simpan list untuk View/Revisi
+
 function renderFileBtn(item) {
     // Jika status = 9 (canceled), tampilkan badge PO Canceled
     if (item.status === 9) {
@@ -338,34 +457,17 @@ function renderFileBtn(item) {
         </span>`;
     }
 
+    var id = item.po_id != null ? item.po_id : item.id;
+    var viewBtn = `<button type="button" class="btn btn-sm btn-primary me-1 btn-gr-view" data-id="${id}" title="View"><i class="fa fa-eye me-1"></i> View</button>`;
+    var revisiBtn = `<button type="button" class="btn btn-sm btn-warning text-dark me-1 btn-gr-revisi" data-id="${id}" title="Revisi"><i class="fa fa-pencil me-1"></i> Revisi</button>`;
+    var lihatPo = '';
     if (item.po_file && item.po_file.trim()) {
-        const publicUrl = `https://is3.cloudhost.id/bensinkustorage/${item.po_file}`;
-        return `
-            <span style="display:inline-flex; align-items:center; gap:2px;">
-                <a href="#" class="badge bg-info px-2 py-1 border border-1 border-dark btn-view-pdf"
-                    data-public-url="${publicUrl}"
-                    style="font-size:11px; border-radius:4px; background-color:#e3f2fd; color:#fff; display:inline-block; min-width:60px; text-align:center;">
-                    <i class="fa fa-file-pdf-o me-1"></i> Lihat PO
-                </a>
-            </span>
-        `;
+        var publicUrl = item.po_file;
+        lihatPo = `<a href="#" class="btn btn-sm btn-info btn-view-pdf" data-public-url="${publicUrl}" title="Lihat PO"><i class="fa fa-file-pdf-o me-1"></i> Lihat PO</a>`;
     } else {
-        if (item.status === 0) {
-            return `
-                <span style="display:inline-flex; align-items:center; gap:2px;">
-                    <span class="badge bg-danger px-2 py-1 border border-1 border-dark"
-                        style="font-size:11px; border-radius:4px; background-color:#fdecea; color:#fff; display:inline-block; min-width:60px; text-align:center;">
-                        Tidak ada File
-                    </span>
-                </span>
-            `;
-        } else {
-            return `<span class="badge bg-danger px-2 py-1 border border-1 border-dark"
-                        style="font-size:11px; border-radius:4px; background-color:#fdecea; color:#fff; display:inline-block; min-width:60px; text-align:center;">
-                        Tidak ada File
-                        </span>`;
-        }
+        lihatPo = `<span class="badge bg-secondary" style="font-size:11px;">Tidak ada File</span>`;
     }
+    return `<span style="display:inline-flex; align-items:center; flex-wrap:wrap; gap:2px;">${viewBtn}${revisiBtn}${lihatPo}</span>`;
 }
 
     function fetchList(){
@@ -383,6 +485,7 @@ function renderFileBtn(item) {
             $('#card-revisi').text(res.cards?.received || 0);
             
             if (res.data && res.data.length > 0) {
+                goodReceiptListData = res.data;
                 var rows = res.data.map(function(item){
                     return [
                         item.tipe_sph ?? '-', 
@@ -653,8 +756,8 @@ function renderFileBtn(item) {
             }
         }
         
-        // Total = Sub Total + PPN + PBBKB + PPH
-        var total = subtotal + ppn + pbbkb + pph;
+        // Total = Sub Total + PPN + PBBKB saja. PPh 23 tidak dimasukkan dalam Total (bukan dikurangkan, hanya tidak dihitung di Total)
+        var total = subtotal + ppn + pbbkb;
         
         // Update fields
         $('#tambah-po-subtotal').val(formatRupiah(subtotal));
@@ -809,7 +912,9 @@ function renderFileBtn(item) {
     
     $('#modalTambahPO').on('shown.bs.modal', function(){ 
         initTambahPOSPHSelect(); 
-        initTambahPOWilayahSelect(); 
+        initTambahPOWilayahSelect();
+        // Refresh Seq No dari API setiap modal dibuka agar counter IASE/seq ter-update (backend harus increment counter saat POST tambah-po)
+        refreshSequenceNoTambahPO();
         // Initialize date picker for Request Date
         $('#tambah-po-req-date').datepicker({
             language: 'en',
@@ -964,7 +1069,214 @@ function renderFileBtn(item) {
         $('#pdfViewerFrame').attr('src', publicUrl);
         $('#pdfModal').modal('show');
     });
-    
+
+    // View PO: GET detail, tampilkan modal read-only
+    $(document).on('click', '.btn-gr-view', function(e){
+        e.preventDefault();
+        var id = $(this).data('id');
+        if (!id) return;
+        $('#modalViewPOBody').html('<div class="text-center py-4"><span class="spinner-border text-primary"></span> Loading...</div>');
+        $('#modalViewPOFileLink').addClass('d-none');
+        $('#modalViewPO').modal('show');
+        $.get('/api/good-receipts/' + id + '/detail')
+            .done(function(res) {
+                var d = res.data !== undefined ? res.data : res;
+                var createdDate = (d.created_at || '').toString();
+                if (createdDate.length >= 10) createdDate = createdDate.substring(0, 10);
+                if (!createdDate) createdDate = '-';
+                var html = '<div class="mb-3"><strong>Kode SPH:</strong> ' + (d.kode_sph || '-') + '</div>';
+                html += '<div class="mb-3"><strong>Nama Customer:</strong> ' + (d.nama_customer || '-') + '</div>';
+                html += '<div class="mb-3"><strong>PO No:</strong> ' + (d.po_no || '-') + '</div>';
+                html += '<div class="mb-3"><strong>Created:</strong> ' + createdDate + ' &nbsp; <strong>Seq No:</strong> ' + (d.no_seq != null ? d.no_seq : (d.daily_seq != null ? d.daily_seq : '-')) + '</div>';
+                html += '<div class="mb-3"><strong>Request Date:</strong> ' + (d.req_date || '-') + '</div>';
+                html += '<div class="mb-3"><strong>Sub Total:</strong> ' + (d.sub_total != null ? formatRupiah(parseFloat(d.sub_total)) : '-') + '</div>';
+                html += '<div class="mb-3"><strong>PPN:</strong> ' + (d.ppn != null ? formatRupiah(parseFloat(d.ppn)) : '-') + ' &nbsp; <strong>PBBKB:</strong> ' + (d.pbbkb != null ? formatRupiah(parseFloat(d.pbbkb)) : '-') + '</div>';
+                html += '<div class="mb-3"><strong>PPH:</strong> ' + (d.pph != null ? formatRupiah(parseFloat(d.pph)) : '-') + ' &nbsp; <strong>Transport:</strong> ' + (d.transport != null ? formatRupiah(parseFloat(d.transport)) : '-') + '</div>';
+                html += '<div class="mb-3"><strong>Total:</strong> ' + (d.total != null ? formatRupiah(parseFloat(d.total)) : '-') + '</div>';
+                html += '<div class="mb-3"><strong>Terbilang:</strong> ' + (d.terbilang || '-') + '</div>';
+                if (d.items && d.items.length) {
+                    html += '<table class="table table-bordered table-sm"><thead><tr><th>Nama Item</th><th>Qty</th><th>Per Item</th><th>Total Harga</th></tr></thead><tbody>';
+                    d.items.forEach(function(it) {
+                        html += '<tr><td>' + (it.nama_item || '') + '</td><td>' + (it.qty != null ? it.qty : '') + '</td><td>' + (it.per_item != null ? it.per_item : '') + '</td><td>' + (it.total_harga != null ? it.total_harga : '') + '</td></tr>';
+                    });
+                    html += '</tbody></table>';
+                }
+                $('#modalViewPOBody').html(html);
+                if (d.po_file && d.po_file.trim()) {
+                    var poUrl = d.po_file.indexOf('http') === 0 ? d.po_file : d.po_file;
+                    $('#modalViewPOFileLink').attr('href', poUrl).removeClass('d-none');
+                }
+            })
+            .fail(function() {
+                $('#modalViewPOBody').html('<p class="text-danger">Gagal memuat detail PO.</p>');
+            });
+    });
+
+    // Revisi PO: buka modal dengan data list + GET detail, Seq No / Nomer SPH / Nama Perusahaan readonly
+    $(document).on('click', '.btn-gr-revisi', function(e){
+        e.preventDefault();
+        var id = $(this).data('id');
+        if (!id) return;
+        var item = goodReceiptListData.find(function(i) { return (i.po_id != null ? i.po_id : i.id) == id; });
+        if (!item) {
+            Swal.fire('Oops!', 'Data tidak ditemukan.', 'warning');
+            return;
+        }
+        $('#revisi-po-id').val(id);
+        $('#revisi-po-sph').val(item.kode_sph || '');
+        $('#revisi-po-nama-perusahaan').val(item.comp_name || '');
+        $('#revisi-po-no-customer').val(item.po_no || '');
+        $('#revisi-po-source').val(item.source || item.tipe_sph || '');
+        $.get('/api/good-receipts/' + id + '/detail')
+            .done(function(res) {
+                var d = res.data !== undefined ? res.data : res;
+                var items = d.items || [];
+                // Response baru: flat sub_total, ppn, pbbkb, pph, total, terbilang, no_seq, wilayah, req_date
+                $('#revisi-po-seq').val(d.no_seq != null ? d.no_seq : (item.no_seq != null ? item.no_seq : ''));
+                $('#revisi-po-req-date').val((d.req_date || (d.created_at || '').toString().substring(0, 10)).toString().substring(0, 10));
+                var subTotal = parseFloat(d.sub_total) || 0;
+                var ppn = parseFloat(d.ppn) || 0;
+                var pbbkb = parseFloat(d.pbbkb) || 0;
+                var pph = parseFloat(d.pph) || 0;
+                var total = parseFloat(d.total) || 0;
+                $('#revisi-po-subtotal').val(formatRupiah(subTotal));
+                $('#revisi-po-ppn').val(formatRupiah(ppn));
+                $('#revisi-po-pbbkb').val(d.pbbkb != null && d.pbbkb !== '' ? formatCurrencyDecimal(parseFloat(d.pbbkb)) : '');
+                $('#revisi-po-pph').val(d.pph != null && d.pph !== '' ? formatCurrencyDecimal(parseFloat(d.pph)) : 'Rp 0,00');
+                $('#revisi-po-total').val(formatRupiah(total));
+                $('#revisi-po-terbilang').text((d.terbilang || (total > 0 ? formatTerbilang(Math.floor(total)) : '')).trim());
+                var hsdItem = items.find(function(i) { return (i.nama_item || '').toLowerCase().indexOf('hsd') >= 0 || (i.nama_item || '').toLowerCase().indexOf('solar') >= 0; });
+                var ongkosItem = items.find(function(i) { return (i.nama_item || '').toLowerCase().indexOf('ongkos') >= 0 || (i.nama_item || '').toLowerCase().indexOf('angkut') >= 0; });
+                var qty = (hsdItem && hsdItem.qty) || (items[0] && items[0].qty) || 1;
+                var hsd = (hsdItem && hsdItem.per_item) != null ? parseFloat(hsdItem.per_item) : (items[0] && items[0].per_item != null ? parseFloat(items[0].per_item) : 0);
+                var ongkos = (ongkosItem && ongkosItem.per_item) != null ? parseFloat(ongkosItem.per_item) : (items[1] && items[1].per_item != null ? parseFloat(items[1].per_item) : 0);
+                $('#revisi-po-qty').val(qty);
+                $('#revisi-po-hsd-solar').val(formatCurrencyDecimal(hsd));
+                $('#revisi-po-ongkos-angkut').val(formatCurrencyDecimal(ongkos));
+                $('#revisi-po-wilayah-value').val(d.wilayah || item.wilayah || '');
+                $.get('/api/master-wilayah/request', function(wres) {
+                    var list = Array.isArray(wres) ? wres : (wres.data || wres || []);
+                    if (!Array.isArray(list)) list = [];
+                    var wVal = d.wilayah || item.wilayah || item.wilayah_id;
+                    var codeLabel = wVal || '-';
+                    list.forEach(function(w) {
+                        var val = w.value != null ? String(w.value) : (w.id != null ? String(w.id) : (w.wilayah || w.name));
+                        if (val === String(wVal)) codeLabel = w.code || w.name || w.wilayah || val;
+                    });
+                    $('#revisi-po-wilayah').val(codeLabel);
+                });
+                $('#modalRevisiPO').modal('show');
+            })
+            .fail(function() {
+                Swal.fire('Oops!', 'Gagal memuat detail PO untuk revisi.', 'warning');
+            });
+    });
+
+    // Revisi form: hitung ulang total saat input berubah
+    function recalcRevisiTotal() {
+        var qty = parseFloat($('#revisi-po-qty').val()) || 0;
+        var hsd = parseCurrencyValueDecimal($('#revisi-po-hsd-solar').val());
+        var ongkos = parseCurrencyValueDecimal($('#revisi-po-ongkos-angkut').val());
+        var includePpn = $('#revisi-po-include-ppn').is(':checked');
+        var hsdTotal = qty * (hsd || 0);
+        var ongkosTotal = qty * (ongkos || 0);
+        var subtotal = hsdTotal + ongkosTotal;
+        var ppn = includePpn ? subtotal * 0.11 : (qty * hsd) * 0.11;
+        var pbbkb = parseCurrencyValue($('#revisi-po-pbbkb').val()) || 0;
+        var pph = parseCurrencyValue($('#revisi-po-pph').val()) || 0;
+        var total = subtotal + ppn + pbbkb;
+        $('#revisi-po-subtotal').val(formatRupiah(subtotal));
+        $('#revisi-po-ppn').val(formatRupiah(ppn));
+        $('#revisi-po-total').val(formatRupiah(total));
+        $('#revisi-po-terbilang').text(total > 0 ? formatTerbilang(Math.floor(total)) : '');
+    }
+    $(document).on('input change', '#revisi-po-qty, #revisi-po-hsd-solar, #revisi-po-ongkos-angkut, #revisi-po-pbbkb, #revisi-po-pph, #revisi-po-include-ppn', recalcRevisiTotal);
+
+    // Form Revisi PO submit: konfirmasi lalu POST update (form-data jika ada file, else JSON)
+    $('#formRevisiPO').on('submit', function(e) {
+        e.preventDefault();
+        var id = $('#revisi-po-id').val();
+        if (!id) return;
+        Swal.fire({
+            title: 'Konfirmasi Revisi',
+            text: 'Apakah anda yakin untuk revisi PO ini?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Revisi',
+            cancelButtonText: 'Batal'
+        }).then(function(result) {
+            if (!result.isConfirmed) return;
+            var $btn = $('#btnSimpanRevisiPO');
+            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Menyimpan...');
+            var qty = parseFloat($('#revisi-po-qty').val()) || 0;
+            var hsd = parseCurrencyValueDecimal($('#revisi-po-hsd-solar').val());
+            var ongkos = parseCurrencyValueDecimal($('#revisi-po-ongkos-angkut').val());
+            var items = [
+                { nama_item: 'HSD Solar', qty: qty, per_item: hsd || 0, total_harga: qty * (hsd || 0) },
+                { nama_item: 'Ongkos Angkut', qty: qty, per_item: ongkos || 0, total_harga: qty * (ongkos || 0) }
+            ];
+            var payload = {
+                po_no: $('#revisi-po-no-customer').val().trim(),
+                no_seq: $('#revisi-po-seq').val().trim(),
+                wilayah: $('#revisi-po-wilayah-value').val(),
+                source: $('#revisi-po-source').val(),
+                sub_total: parseCurrencyValue($('#revisi-po-subtotal').val()),
+                ppn: parseCurrencyValue($('#revisi-po-ppn').val()),
+                pbbkb: parseCurrencyValue($('#revisi-po-pbbkb').val()) || 0,
+                pph: parseCurrencyValue($('#revisi-po-pph').val()) || 0,
+                total: parseCurrencyValue($('#revisi-po-total').val()),
+                terbilang: $('#revisi-po-terbilang').text().trim(),
+                status: 1,
+                items: items
+            };
+            var hasFile = $('#revisi-po-file')[0].files && $('#revisi-po-file')[0].files.length > 0;
+            if (hasFile) {
+                var formData = new FormData();
+                Object.keys(payload).forEach(function(k) {
+                    if (k === 'items') formData.append(k, JSON.stringify(payload[k]));
+                    else formData.append(k, payload[k]);
+                });
+                formData.append('file', $('#revisi-po-file')[0].files[0]);
+                $.ajax({
+                    url: '/api/good-receipts/' + id + '/update',
+                    method: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') }
+                }).done(function(res) {
+                    $('#modalRevisiPO').modal('hide');
+                    Swal.fire('Berhasil!', res.message || 'PO berhasil direvisi', 'success');
+                    fetchList();
+                }).fail(function(xhr) {
+                    Swal.fire('Gagal', (xhr.responseJSON && xhr.responseJSON.message) || 'Gagal menyimpan revisi', 'error');
+                }).always(function() {
+                    $btn.prop('disabled', false).html('Simpan');
+                });
+            } else {
+                $.ajax({
+                    url: '/api/good-receipts/' + id + '/update',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(payload),
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                }).done(function(res) {
+                    $('#modalRevisiPO').modal('hide');
+                    Swal.fire('Berhasil!', res.message || 'PO berhasil direvisi', 'success');
+                    fetchList();
+                }).fail(function(xhr) {
+                    Swal.fire('Gagal', (xhr.responseJSON && xhr.responseJSON.message) || 'Gagal menyimpan revisi', 'error');
+                }).always(function() {
+                    $btn.prop('disabled', false).html('Simpan');
+                });
+            }
+        });
+    });
+
     $('#pdfModal').on('hidden.bs.modal', function(){
         $('#pdfViewerFrame').attr('src', '');
     });
@@ -1033,6 +1345,7 @@ function renderFileBtn(item) {
         formData.set('total', parseCurrencyValue($('#tambah-po-total').val()));
         formData.set('include_ppn', includePpn ? '1' : '0');
         formData.set('pbbkb_percentage', $('input[name="pbbkb_percentage"]:checked').val() || '');
+        // no_seq (e.g. IASE020): backend harus update counter di DB saat simpan berhasil agar seq berikutnya increment
         formData.set('no_seq', $('#tambah-po-seq').val().trim());
         formData.set('wilayah', $('#tambah-po-wilayah').val());
         formData.set('sph_id', $('#tambah-po-sph').val());
