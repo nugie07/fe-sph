@@ -164,28 +164,14 @@
               <div class="row g-3 mt-2">
                 <div class="col-md-3">
                   <label class="form-label">Toleransi Susut</label>
-                  <div class="d-flex gap-3">
-                    <div class="form-check">
-                      <input class="form-check-input" type="radio" name="susut" id="susut01" value="0.1" required>
-                      <label class="form-check-label" for="susut01">0.1</label>
-                    </div>
-                    <div class="form-check">
-                      <input class="form-check-input" type="radio" name="susut" id="susut02" value="0.2">
-                      <label class="form-check-label" for="susut02">0.2</label>
-                    </div>
-                    <div class="form-check">
-                      <input class="form-check-input" type="radio" name="susut" id="susut03" value="0.3">
-                      <label class="form-check-label" for="susut03">0.3</label>
-                    </div>
-                    <div class="form-check">
-                      <input class="form-check-input" type="radio" name="susut" id="susut04" value="0.4">
-                      <label class="form-check-label" for="susut04">0.4</label>
-                    </div>
-                    <div class="form-check">
-                      <input class="form-check-input" type="radio" name="susut" id="susut05" value="0.5">
-                      <label class="form-check-label" for="susut05">0.5</label>
-                    </div>
-                  </div>
+                  <select class="form-select" name="susut" id="susut" required>
+                    <option value="">Pilih toleransi susut</option>
+                    <option value="0.1">0.1</option>
+                    <option value="0.2">0.2</option>
+                    <option value="0.3">0.3</option>
+                    <option value="0.4">0.4</option>
+                    <option value="0.5">0.5</option>
+                  </select>
                   <div class="invalid-feedback">Toleransi Susut is required.</div>
                 </div>
                 <div class="col-md-4">
@@ -265,11 +251,16 @@
                 $.get('/api/get-customer-detail', { id: passedCompanyId }, function(data) {
                     const romawi = ['', 'I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'][today.getMonth() + 1];
                     const periode = today.getDate() <= 14 ? 'P1' : 'P2';
-                    $('#kode_sph').val(`${data.cust_code}/${data.alias}/${data.type}/${romawi}/${periode}/${year}`);
-                    // Autofill contact fields based on customer detail
-                    $('#pic').val(data.pic_name || '');
-                    $('#email').val(data.email || '');
-                    $('#contact_no').val(data.pic_contact || '');
+                    $('#kode_sph').val(`${data.cust_code||''}/${data.alias||''}/${data.type||''}/${romawi}/${periode}/${year}`);
+                    $('#pic').val(data.pic_name || ''); $('#email').val(data.email || ''); $('#contact_no').val(data.pic_contact || '');
+                    if (data.susut != null && data.susut !== '') { var s = String(data.susut).trim(); if (s === '05') s = '0.5'; $('#susut').val(s); }
+                    else $('#susut').val('');
+                    if (data.payment != null && data.payment !== '') {
+                        var $pm = $('#pay_method');
+                        var payText = String(data.payment).trim();
+                        if ($pm.find('option').filter(function(){ return $(this).text() === payText; }).length) $pm.val($pm.find('option').filter(function(){ return $(this).text() === payText; }).val()).trigger('change');
+                        else { $pm.append(new Option(payText, payText, true, true)).trigger('change'); }
+                    }
                 });
             }
         })();
@@ -571,10 +562,18 @@
                 $.get('/api/get-customer-detail', { id: id }, function(data) {
                     const romawi = ['', 'I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'][today.getMonth() + 1];
                     const periode = today.getDate() <= 14 ? 'P1' : 'P2';
-                    $('#kode_sph').val(`${data.cust_code}/${data.alias}/${data.type}/${romawi}/${periode}/${year}`);
-                    $('#pic').val(data.pic_name); $('#email').val(data.email); $('#contact_no').val(data.pic_contact);
+                    $('#kode_sph').val(`${data.cust_code||''}/${data.alias||''}/${data.type||''}/${romawi}/${periode}/${year}`);
+                    $('#pic').val(data.pic_name || ''); $('#email').val(data.email || ''); $('#contact_no').val(data.pic_contact || '');
+                    if (data.susut != null && data.susut !== '') { var s = String(data.susut).trim(); if (s === '05') s = '0.5'; $('#susut').val(s); }
+                    else $('#susut').val('');
+                    if (data.payment != null && data.payment !== '') {
+                        var $pm = $('#pay_method');
+                        var payText = String(data.payment).trim();
+                        if ($pm.find('option').filter(function(){ return $(this).text() === payText; }).length) $pm.val($pm.find('option').filter(function(){ return $(this).text() === payText; }).val()).trigger('change');
+                        else { $pm.append(new Option(payText, payText, true, true)).trigger('change'); }
+                    }
                 });
-            }
+            } else $('#susut').val('');
         });
 
         $.get('/api/get-products', function(data) {
@@ -671,13 +670,14 @@
                 contact_no: $('#contact_no').val(),
                 product: $('#product').find(':selected').text(),
                 price_liter: $('#price_liter_hidden').val(),
-                // biaya_lokasi removed on this template
                 ppn: $('#ppn_hidden').val(),
                 oat: $('#oat_hidden').val(),
                 ppn_oat: $('#ppn_oat_hidden').val(),
                 total_price: $('#total_price_hidden').val(),
+                pbbkb: 0,
                 pay_method: $('#pay_method').find(':selected').text(),
-                susut: $('input[name="susut"]:checked').val(),
+                payment: $('#pay_method').find(':selected').text(),
+                susut: $('#susut').val(),
                 note_berlaku: $('#note_berlaku').val(),
                 site_location: $('#site_location').val(),
                 oat_lokasi: $('#site_location').val(),

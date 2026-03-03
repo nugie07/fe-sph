@@ -81,9 +81,14 @@
                 </div>
 
                 <div class="col-md-4">
-                  <label class="form-label">Biaya Lokasi</label>
-                  <select class="form-select select2" name="biaya_lokasi" id="biaya_lokasi" required></select>
-                  <div class="invalid-feedback">Biaya Lokasi is required.</div>
+                  <label class="form-label">PBBKB %</label>
+                  <select class="form-select" name="pbbkb_percentage" id="pbbkb_percentage" required>
+                    <option value="">Pilih nilai PBBKB</option>
+                    <option value="5">5%</option>
+                    <option value="7.5">7.5%</option>
+                    <option value="10">10%</option>
+                  </select>
+                  <div class="invalid-feedback">PBBKB % is required.</div>
                 </div>
               </div>
 
@@ -120,28 +125,14 @@
               <div class="row g-3 mt-2">
                 <div class="col-md-3">
                   <label class="form-label">Toleransi Susut</label>
-                  <div class="d-flex gap-3">
-                    <div class="form-check">
-                      <input class="form-check-input" type="radio" name="susut" id="susut01" value="0.1" required>
-                      <label class="form-check-label" for="susut01">0.1</label>
-                    </div>
-                    <div class="form-check">
-                      <input class="form-check-input" type="radio" name="susut" id="susut02" value="0.2">
-                      <label class="form-check-label" for="susut02">0.2</label>
-                    </div>
-                    <div class="form-check">
-                      <input class="form-check-input" type="radio" name="susut" id="susut03" value="0.3">
-                      <label class="form-check-label" for="susut03">0.3</label>
-                    </div>
-                    <div class="form-check">
-                      <input class="form-check-input" type="radio" name="susut" id="susut04" value="0.4">
-                      <label class="form-check-label" for="susut04">0.4</label>
-                    </div>
-                    <div class="form-check">
-                      <input class="form-check-input" type="radio" name="susut" id="susut05" value="0.5">
-                      <label class="form-check-label" for="susut05">0.5</label>
-                    </div>
-                  </div>
+                  <select class="form-select" name="susut" id="susut" required>
+                    <option value="">Pilih toleransi susut</option>
+                    <option value="0.1">0.1</option>
+                    <option value="0.2">0.2</option>
+                    <option value="0.3">0.3</option>
+                    <option value="0.4">0.4</option>
+                    <option value="0.5">0.5</option>
+                  </select>
                   <div class="invalid-feedback">Toleransi Susut is required.</div>
                 </div>
                 <div class="col-md-4">
@@ -223,16 +214,49 @@
                 $.get('/api/get-customer-detail', { id: passedCompanyId }, function(data) {
                     const romawi = ['', 'I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'][today.getMonth() + 1];
                     const periode = today.getDate() <= 14 ? 'P1' : 'P2';
-                    $('#kode_sph').val(`${data.cust_code}/${data.alias}/${data.type}/${romawi}/${periode}/${year}`);
-                    // Autofill contact fields based on customer detail
-                    $('#pic').val(data.pic_name || '');
-                    $('#email').val(data.email || '');
-                    $('#contact_no').val(data.pic_contact || '');
+                    $('#kode_sph').val(`${data.cust_code||''}/${data.alias||''}/${data.type||''}/${romawi}/${periode}/${year}`);
+                    $('#pic').val(data.pic_name || ''); $('#email').val(data.email || ''); $('#contact_no').val(data.pic_contact || '');
+                    if (data.pbbkb != null && data.pbbkb !== '') {
+                        var pbbkbNum = parseFloat(data.pbbkb);
+                        var isPct = (Math.abs(pbbkbNum - 5) < 0.01 || Math.abs(pbbkbNum - 7.5) < 0.01 || Math.abs(pbbkbNum - 10) < 0.01);
+                        if (isPct) {
+                            var pctVal = (Math.abs(pbbkbNum - 5) < 0.01) ? '5' : (Math.abs(pbbkbNum - 7.5) < 0.01) ? '7.5' : '10';
+                            $('#pbbkb_percentage').val(pctVal);
+                            pbbkbPercentage = parseFloat(pctVal) || 0;
+                            if (typeof calculateTotal === 'function') calculateTotal();
+                        } else {
+                            var priceLiter = parseFloat($('#price_liter_hidden').val()) || 0;
+                            if (priceLiter > 0) {
+                                var pct = (pbbkbNum / priceLiter) * 100;
+                                if (Math.abs(pct - 5) < 1) $('#pbbkb_percentage').val('5');
+                                else if (Math.abs(pct - 7.5) < 1) $('#pbbkb_percentage').val('7.5');
+                                else if (Math.abs(pct - 10) < 1) $('#pbbkb_percentage').val('10');
+                                else $('#pbbkb_percentage').val('');
+                                pbbkbPercentage = parseFloat($('#pbbkb_percentage').val()) || 0;
+                                if (typeof calculateTotal === 'function') calculateTotal();
+                            } else {
+                                $('#pbbkb_display').val(formatRupiah(pbbkbNum));
+                                $('#pbbkb_hidden').val(pbbkbNum.toFixed(2));
+                                $('#pbbkb_percentage').val('');
+                                var total = (parseFloat($('#price_liter_hidden').val()) || 0) + (parseFloat($('#ppn_hidden').val()) || 0) + pbbkbNum;
+                                $('#total_price_display').val(formatRupiah(total));
+                                $('#total_price_hidden').val(total.toFixed(2));
+                            }
+                        }
+                    } else $('#pbbkb_percentage').val('');
+                    if (data.susut != null && data.susut !== '') { var s = String(data.susut).trim(); if (s === '05') s = '0.5'; $('#susut').val(s); }
+                    else $('#susut').val('');
+                    if (data.payment != null && data.payment !== '') {
+                        var $pm = $('#pay_method');
+                        var payText = String(data.payment).trim();
+                        if ($pm.find('option').filter(function(){ return $(this).text() === payText; }).length) $pm.val($pm.find('option').filter(function(){ return $(this).text() === payText; }).val()).trigger('change');
+                        else { $pm.append(new Option(payText, payText, true, true)).trigger('change'); }
+                    }
                 });
             }
         })();
         const PPN_PERCENT = {{ env('PPN', 11) }};
-        let lokasiPercentage = 0;
+        let pbbkbPercentage = 0;
 
         // Fungsi untuk memformat angka menjadi format mata uang Rupiah
         function formatRupiah(angka) {
@@ -254,7 +278,7 @@
         function calculateTotal() {
             const priceLiter = parseFloat($('#price_liter_hidden').val()) || 0;
             const ppn = priceLiter * PPN_PERCENT / 100;
-            const pbbkb = priceLiter * lokasiPercentage / 100;
+            const pbbkb = priceLiter * pbbkbPercentage / 100;
             const total = priceLiter + ppn + pbbkb;
 
             $('#ppn_display').val(formatRupiah(ppn));
@@ -298,9 +322,9 @@
             calculateTotal();
         });
 
-        // Event listener untuk biaya lokasi
-        $('#biaya_lokasi').on('select2:select', function(e) {
-            lokasiPercentage = parseFloat(e.params.data.percentage || 0);
+        // Event listener untuk PBBKB %
+        $('#pbbkb_percentage').on('change', function() {
+            pbbkbPercentage = parseFloat($(this).val()) || 0;
             calculateTotal();
         });
 
@@ -336,10 +360,43 @@
                 $.get('/api/get-customer-detail', { id: id }, function(data) {
                     const romawi = ['', 'I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'][today.getMonth() + 1];
                     const periode = today.getDate() <= 14 ? 'P1' : 'P2';
-                    $('#kode_sph').val(`${data.cust_code}/${data.alias}/${data.type}/${romawi}/${periode}/${year}`);
-                    $('#pic').val(data.pic_name); $('#email').val(data.email); $('#contact_no').val(data.pic_contact);
+                    $('#kode_sph').val(`${data.cust_code||''}/${data.alias||''}/${data.type||''}/${romawi}/${periode}/${year}`);
+                    $('#pic').val(data.pic_name || ''); $('#email').val(data.email || ''); $('#contact_no').val(data.pic_contact || '');
+                    if (data.pbbkb != null && data.pbbkb !== '') {
+                        var pbbkbNum = parseFloat(data.pbbkb);
+                        var isPct = (Math.abs(pbbkbNum - 5) < 0.01 || Math.abs(pbbkbNum - 7.5) < 0.01 || Math.abs(pbbkbNum - 10) < 0.01);
+                        if (isPct) {
+                            var pctVal = (Math.abs(pbbkbNum - 5) < 0.01) ? '5' : (Math.abs(pbbkbNum - 7.5) < 0.01) ? '7.5' : '10';
+                            $('#pbbkb_percentage').val(pctVal);
+                            pbbkbPercentage = parseFloat(pctVal) || 0;
+                            if (typeof calculateTotal === 'function') calculateTotal();
+                        } else {
+                            var priceLiter = parseFloat($('#price_liter_hidden').val()) || 0;
+                            if (priceLiter > 0) {
+                                var pct = (pbbkbNum / priceLiter) * 100;
+                                if (Math.abs(pct - 5) < 1) $('#pbbkb_percentage').val('5');
+                                else if (Math.abs(pct - 7.5) < 1) $('#pbbkb_percentage').val('7.5');
+                                else if (Math.abs(pct - 10) < 1) $('#pbbkb_percentage').val('10');
+                                else $('#pbbkb_percentage').val('');
+                                pbbkbPercentage = parseFloat($('#pbbkb_percentage').val()) || 0;
+                                if (typeof calculateTotal === 'function') calculateTotal();
+                            } else {
+                                $('#pbbkb_display').val(formatRupiah(pbbkbNum));
+                                $('#pbbkb_hidden').val(pbbkbNum.toFixed(2));
+                                $('#pbbkb_percentage').val('');
+                            }
+                        }
+                    } else $('#pbbkb_percentage').val('');
+                    if (data.susut != null && data.susut !== '') { var s = String(data.susut).trim(); if (s === '05') s = '0.5'; $('#susut').val(s); }
+                    else $('#susut').val('');
+                    if (data.payment != null && data.payment !== '') {
+                        var $pm = $('#pay_method');
+                        var payText = String(data.payment).trim();
+                        if ($pm.find('option').filter(function(){ return $(this).text() === payText; }).length) $pm.val($pm.find('option').filter(function(){ return $(this).text() === payText; }).val()).trigger('change');
+                        else { $pm.append(new Option(payText, payText, true, true)).trigger('change'); }
+                    }
                 });
-            }
+            } else { $('#susut').val(''); $('#pbbkb_percentage').val(''); }
         });
 
         $.get('/api/get-products', function(data) {
@@ -348,16 +405,6 @@
             data.forEach(item => {
                 $product.append(`<option value="${item.id}" data-price="${item.price}">${item.product_name}</option>`);
             });
-        });
-
-        $('#biaya_lokasi').select2({
-            placeholder: 'Pilih Lokasi',
-            ajax: {
-                url: '/api/master-lov/children',
-                dataType: 'json', delay: 250,
-                data: () => ({ parent_code: 'LOKASI_MASTER' }),
-                processResults: data => ({ results: $.map(data, item => ({ id: item.id, text: `${item.code} (${item.value}%)`, percentage: item.value })) })
-            }
         });
 
         $('#pay_method').select2({
@@ -420,12 +467,13 @@
                 contact_no: $('#contact_no').val(),
                 product: $('#product').find(':selected').text(),
                 price_liter: $('#price_liter_hidden').val(),
-                biaya_lokasi: $('#biaya_lokasi').find(':selected').text(),
+                pbbkb_percentage: $('#pbbkb_percentage').val(),
                 ppn: $('#ppn_hidden').val(),
                 pbbkb: $('#pbbkb_hidden').val(),
                 total_price: $('#total_price_hidden').val(),
                 pay_method: $('#pay_method').find(':selected').text(),
-                susut: $('input[name="susut"]:checked').val(),
+                payment: $('#pay_method').find(':selected').text(),
+                susut: $('#susut').val(),
                 note_berlaku: $('#note_berlaku').val()
             };
             if (isRevisi) { formData.sph_id = $('#sph_id').val(); }

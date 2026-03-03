@@ -824,6 +824,22 @@ use App\Helpers\PermissionHelper;
                     setVal('#lokasi_oat', header.biaya_lokasi || header.oat_lokasi || header.site_location || '');
                     // Preselect Biaya Lokasi (if exists on template create)
                     setSelectOrTextPersist('#biaya_lokasi', (header.biaya_lokasi || header.oat_lokasi || header.site_location || ''), 2500);
+                    if ($d.find('#pbbkb_percentage').length) {
+                        var pctVal = header.pbbkb_percentage || '';
+                        if (!pctVal && (header.biaya_lokasi || header.pbbkb != null)) {
+                            var bl = String(header.biaya_lokasi || '');
+                            if (bl.indexOf('7.5') !== -1 || bl.indexOf('7,5') !== -1) pctVal = '7.5';
+                            else if (bl.indexOf('10') !== -1 && bl.indexOf('7') === -1) pctVal = '10';
+                            else if (bl.indexOf('5') !== -1) pctVal = '5';
+                            else if (header.pbbkb != null && header.price_liter > 0) {
+                                var pct = (parseFloat(header.pbbkb) / parseFloat(header.price_liter)) * 100;
+                                if (Math.abs(pct - 7.5) < 1) pctVal = '7.5';
+                                else if (Math.abs(pct - 10) < 1) pctVal = '10';
+                                else if (Math.abs(pct - 5) < 1) pctVal = '5';
+                            }
+                        }
+                        $d.find('#pbbkb_percentage').val(pctVal);
+                    }
                     // Price & computed
                     if ($d.find('#price_liter_display').length){
                         var price = parseFloat(header.price_liter || 0);
@@ -1105,10 +1121,11 @@ use App\Helpers\PermissionHelper;
                         }
                         }
                     } catch (err) { console.warn('Failed to render details rows:', err); }
-                    // Susut radio
+                    // Susut radio or dropdown
                     var susutVal = (header.susut!=null)? String(header.susut): null;
                     if (susutVal){ $d.find('input[name="susut"][value="'+susutVal+'"]').prop('checked', true); }
-                    setSelectOrTextPersist('#pay_method', header.pay_method || '', 2500);
+                    if ($d.find('#susut').length && susutVal) { $d.find('#susut').val(susutVal); }
+                    setSelectOrTextPersist('#pay_method', header.payment || header.pay_method || '', 2500);
                     setVal('#note_berlaku', header.note_berlaku || '');
                     // Disable all inputs/selects and hide submit buttons
                     $d.find('input, select, textarea, button[type="submit"]').prop('disabled', true).attr('readonly', true);
@@ -1583,11 +1600,28 @@ use App\Helpers\PermissionHelper;
                     } catch (err) { console.warn('Failed to render details rows (edit):', err); }
                     // Preselect Biaya Lokasi when exists (create template)
                     setSelectOrTextPersist('#biaya_lokasi', (header.biaya_lokasi || header.oat_lokasi || header.site_location || ''), 2500);
-                    // Susut radio default
+                    if ($d.find('#pbbkb_percentage').length) {
+                        var pctValEdit = header.pbbkb_percentage || '';
+                        if (!pctValEdit && (header.biaya_lokasi || header.pbbkb != null)) {
+                            var bl = String(header.biaya_lokasi || '');
+                            if (bl.indexOf('7.5') !== -1 || bl.indexOf('7,5') !== -1) pctValEdit = '7.5';
+                            else if (bl.indexOf('10') !== -1 && bl.indexOf('7') === -1) pctValEdit = '10';
+                            else if (bl.indexOf('5') !== -1) pctValEdit = '5';
+                            else if (header.pbbkb != null && header.price_liter > 0) {
+                                var pct = (parseFloat(header.pbbkb) / parseFloat(header.price_liter)) * 100;
+                                if (Math.abs(pct - 7.5) < 1) pctValEdit = '7.5';
+                                else if (Math.abs(pct - 10) < 1) pctValEdit = '10';
+                                else if (Math.abs(pct - 5) < 1) pctValEdit = '5';
+                            }
+                        }
+                        $d.find('#pbbkb_percentage').val(pctValEdit);
+                    }
+                    // Susut radio or dropdown default
                     var susutValEdit = (header.susut!=null)? String(header.susut): null;
                     if (susutValEdit){ $d.find('input[name="susut"][value="'+susutValEdit+'"]').prop('checked', true); }
+                    if ($d.find('#susut').length && susutValEdit) { $d.find('#susut').val(susutValEdit); }
                     // Payment method default
-                    setSelectOrTextPersist('#pay_method', header.pay_method || '', 2500);
+                    setSelectOrTextPersist('#pay_method', header.payment || header.pay_method || '', 2500);
                 } catch(e) { console.warn('Failed to inject edit data:', e); }
             });
             // Pass status=2 and sph_id for revisi to show remark history in iframe
