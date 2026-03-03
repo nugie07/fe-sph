@@ -526,7 +526,8 @@ function renderFileBtn(item) {
             $el.empty().append('<option value=""></option>');
             
             list.forEach(function(w){
-                $el.append(new Option(w.code, w.value, false, false));
+                var optVal = (w.id != null && w.id !== '') ? w.id : w.value;
+                $el.append(new Option(w.code, optVal, false, false));
             });
 
             $el.select2({

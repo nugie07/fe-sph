@@ -84,6 +84,9 @@ use App\Helpers\PermissionHelper;
                 @if(PermissionHelper::hasSubMenuAccess('log.menu', 'log.drs.menu'))
                 <li><a href="{{route('delivery_note')}}">Pembuatan DN No</a></li>
                 @endif
+                @if(PermissionHelper::hasSubMenuAccess('log.menu', 'log.oat.transportir'))
+                <li><a href="{{route('oat-transportir')}}">OAT Transportir</a></li>
+                @endif
 
               </ul>
             </li>

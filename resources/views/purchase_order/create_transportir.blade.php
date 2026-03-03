@@ -110,8 +110,18 @@
               </div>
               <div class="col-md-6">
                 <label>Delivery To</label>
-                <input type="text" name="delivery_to" id="cp_delivery_to" class="form-control" required>
+                <select name="delivery_to" id="cp_delivery_to" class="form-control select2" required>
+                  <option value="">Pilih Vendor terlebih dahulu</option>
+                </select>
                 <div class="invalid-feedback">Field Delivery To wajib diisi.</div>
+              </div>
+              <div class="col-md-4">
+                <label>Qty by KL</label>
+                <select id="cp_qty" class="form-control select2" required>
+                  <option value="">Pilih Delivery To terlebih dahulu</option>
+                </select>
+                <input type="hidden" name="qty" id="cp_qty_submit">
+                <div class="invalid-feedback">Field Qty wajib diisi.</div>
               </div>
               <div class="col-md-4">
                 <label>Portal</label>
@@ -122,11 +132,6 @@
                 <label>Unit Price</label>
                 <input type="text" id="cp_harga" class="form-control" required>
                 <div class="invalid-feedback">Field Unit Price wajib diisi.</div>
-              </div>
-              <div class="col-md-4">
-                <label>Qty</label>
-                <input type="number" name="qty" id="cp_qty" class="form-control" required>
-                <div class="invalid-feedback">Field Qty wajib diisi.</div>
               </div>
               <div class="col-md-4"><label>Sub Total</label><input type="text" id="cp_sub_total" class="form-control" readonly></div>
               <div class="col-md-4"><label>PPN</label><input type="text" id="cp_ppn" class="form-control"></div>
@@ -204,7 +209,8 @@ function parseCurrencyValue(value) {
 
 // --- Hitung & Update Otomatis Semua Kolom Transportir (tanpa PBBKB, BPH, dan PPH) ---
 function calcTransportirFields() {
-    var qty = parseFloat($('#cp_qty').val().replace(/\D/g,'')) || 0;
+    var qtyEl = $('#cp_qty');
+    var qty = qtyEl.is('select') ? (parseFloat(qtyEl.find('option:selected').data('oat')) || parseFloat($('#cp_qty_submit').val()) || 0) : (parseFloat(qtyEl.val().replace(/\D/g,'')) || 0);
     var harga = parseFloat($('#cp_harga_raw').val()) || 0;
     var transport = parseFloat($('#cp_transport_raw').val()) || 0;
 
@@ -257,28 +263,133 @@ $(document).ready(function(){
             });
         });
 
-    // Load vendors (transporters)
-    $.get('/api/transporter?category=2')
-        .done(function(res){
-            var list = res.data || res;
-            var $select = $('#cp_vendor_name').html('<option></option>');
-            list.forEach(function(item){
-                $select.append($('<option>')
-                    .val(item.nama||item.name)
-                    .text(item.nama||item.name)
-                    .attr('data-format', item.format||'')
-                    .attr('data-nama', item.nama||item.name||'')
-                    .attr('data-pic', item.pic||'')
-                    .attr('data-contact', item.contact_no||'')
-                    .attr('data-alamat', item.address||'')
-                );
+    // Vendor dropdown: load after Customer PO selected (using wilayah from PO response)
+    function loadVendorByWilayah(wilayah) {
+        var $select = $('#cp_vendor_name');
+        $select.html('<option value="">Loading...</option>').prop('disabled', true);
+        if (!wilayah) {
+            $select.html('<option value="">Pilih Customer PO terlebih dahulu</option>').prop('disabled', false);
+            if ($select.hasClass('select2-hidden-accessible')) $select.trigger('change.select2');
+            return;
+        }
+        $.get('/api/transporter', { category: 2, wilayah: wilayah })
+            .done(function(res){
+                var list = res.data || res || [];
+                $select.empty().append('<option value="">Pilih Vendor</option>');
+                list.forEach(function(item){
+                    var vid = item.id != null ? item.id : '';
+                    $select.append($('<option>')
+                        .val(item.nama||item.name)
+                        .text(item.nama||item.name)
+                        .attr('data-vendor-id', vid)
+                        .attr('data-format', item.format||'')
+                        .attr('data-nama', item.nama||item.name||'')
+                        .attr('data-pic', item.pic||'')
+                        .attr('data-contact', item.contact_no||'')
+                        .attr('data-alamat', item.address||'')
+                    );
+                });
+                $select.prop('disabled', false);
+                if ($select.hasClass('select2-hidden-accessible')) $select.trigger('change.select2');
+            })
+            .fail(function(){
+                $select.html('<option value="">Gagal memuat vendor</option>').prop('disabled', false);
+                if ($select.hasClass('select2-hidden-accessible')) $select.trigger('change.select2');
             });
-            $select.select2({
-                theme: 'bootstrap-5',
-                width: '100%',
-                placeholder: 'Pilih Vendor'
+    }
+    $('#cp_vendor_name').html('<option value="">Pilih Customer PO terlebih dahulu</option>').select2({
+        theme: 'bootstrap-5',
+        width: '100%',
+        placeholder: 'Pilih Vendor'
+    });
+
+    // Delivery To (OAT lokasi) and Qty (OAT) dropdowns - init select2
+    $('#cp_delivery_to').select2({ theme: 'bootstrap-5', width: '100%', placeholder: 'Pilih Delivery To' });
+    $('#cp_qty').select2({ theme: 'bootstrap-5', width: '100%', placeholder: 'Pilih Qty' });
+
+    // Step 1: Load Delivery To (lokasi) by vendor_id + wilayah_id (dari Customer PO)
+    function loadOatLokasi(vendorId) {
+        var $el = $('#cp_delivery_to');
+        if (!vendorId) {
+            $el.empty().append('<option value="">Pilih Vendor terlebih dahulu</option>');
+            if ($el.hasClass('select2-hidden-accessible')) $el.trigger('change.select2');
+            $('#cp_qty').empty().append('<option value="">Pilih Delivery To terlebih dahulu</option>').trigger('change.select2');
+            $('#cp_qty_submit').val('');
+            $('#cp_harga').val(''); $('#cp_harga_raw').val('');
+            return;
+        }
+        var wilayahId = $('#form-create-po-transportir').data('wilayah-id');
+        var params = { vendor_id: vendorId };
+        if (wilayahId != null && wilayahId !== '') params.wilayah_id = wilayahId;
+        $el.empty().append('<option value="">Pilih Lokasi</option>');
+        $.get('/api/oat-transportir/lokasi', params)
+            .done(function(res) {
+                var list = (res.data || res) || [];
+                $el.empty().append('<option value="">Pilih Lokasi</option>');
+                list.forEach(function(l) {
+                    var label = (l.name || '') + (l.wilayah ? ' - ' + l.wilayah : '');
+                    $el.append($('<option>').val(l.name || '').text(label).attr('data-id', l.id));
+                });
+                if ($el.hasClass('select2-hidden-accessible')) $el.trigger('change.select2');
+                $('#cp_qty').empty().append('<option value="">Pilih Delivery To terlebih dahulu</option>').trigger('change.select2');
+                $('#cp_qty_submit').val('');
+                $('#cp_harga').val(''); $('#cp_harga_raw').val('');
+            })
+            .fail(function() {
+                $el.empty().append('<option value="">Gagal memuat lokasi</option>');
+                if ($el.hasClass('select2-hidden-accessible')) $el.trigger('change.select2');
             });
-        });
+    }
+
+    // Step 2: Load Qty (oat) by vendor_id + lokasi name
+    function loadOatQty(vendorId, lokasiName) {
+        var $el = $('#cp_qty');
+        if (!vendorId || !lokasiName) {
+            $el.empty().append('<option value="">Pilih Delivery To terlebih dahulu</option>');
+            if ($el.hasClass('select2-hidden-accessible')) $el.trigger('change.select2');
+            $('#cp_qty_submit').val('');
+            $('#cp_harga').val(''); $('#cp_harga_raw').val('');
+            return;
+        }
+        $el.empty().append('<option value="">Pilih OAT (Qty)</option>');
+        $.get('/api/oat-transportir/oat-qty', { vendor_id: vendorId, name: lokasiName })
+            .done(function(res) {
+                var list = (res.data || res) || [];
+                $el.empty().append('<option value="">Pilih OAT (Qty)</option>');
+                list.forEach(function(o) {
+                    var oat = (o.oat != null && o.oat !== '') ? String(o.oat) : '';
+                    $el.append($('<option>').val(o.id).text(oat).attr('data-oat', oat));
+                });
+                if ($el.hasClass('select2-hidden-accessible')) $el.trigger('change.select2');
+                $('#cp_qty_submit').val('');
+                $('#cp_harga').val(''); $('#cp_harga_raw').val('');
+            })
+            .fail(function() {
+                $el.empty().append('<option value="">Gagal memuat OAT</option>');
+                if ($el.hasClass('select2-hidden-accessible')) $el.trigger('change.select2');
+            });
+    }
+
+    // Step 3: Load Unit Price (value) by oat id and populate field (editable)
+    function loadOatValue(oatId) {
+        if (!oatId) {
+            $('#cp_harga').val(''); $('#cp_harga_raw').val('');
+            calcTransportirFields();
+            return;
+        }
+        $.get('/api/oat-transportir/value/' + oatId)
+            .done(function(res) {
+                var val = (res.data && res.data.value != null) ? String(res.data.value) : '';
+                var num = parseFloat(val.replace(/[^\d.-]/g, '')) || 0;
+                $('#cp_harga_raw').val(num);
+                $('#cp_harga').val(num ? 'Rp. ' + parseInt(num, 10).toLocaleString('id-ID') : '');
+                calcTransportirFields();
+            })
+            .fail(function() {
+                $('#cp_harga').val(''); $('#cp_harga_raw').val('');
+                calcTransportirFields();
+            });
+    }
 
     // Load Customer PO list (tetap seperti sekarang)
     $.get('/api/list/purchase-order/supplier/approve')
@@ -317,7 +428,10 @@ $(document).ready(function(){
     // Vendor name change
     $('#cp_vendor_name').on('change', function() {
         var $sel = $(this).find('option:selected');
+        var vendorId = $sel.data('vendor-id');
         var format = $sel.data('format') || '';
+        // Load Delivery To (OAT lokasi) by vendor_id
+        loadOatLokasi(vendorId);
         // Ambil Dn No dari field (bukan no_seq)
         var dnNo = $('#cp_dn_no').val() || '';
         var now = new Date();
@@ -326,16 +440,29 @@ $(document).ready(function(){
         var vendorPO = format.replace(/{nomor}|{NOMOR}/g, dnNo)
                              .replace(/{bulan}|{BULAN}/g, romawi)
                              .replace(/{tahun}|{TAHUN}/g, tahun);
-        // Hapus tanda kurung tutup di akhir jika ada
         vendorPO = vendorPO.replace(/\)$/, '');
-        // Hanya set jika field kosong atau user belum edit manual
         if (!$('#cp_vendor_po').data('user-edited')) {
             $('#cp_vendor_po').val(vendorPO);
         }
-        // Auto-fill Nama PIC, Contact, dan Alamat dari vendor (user bisa edit manual)
         $('#cp_nama').val($sel.data('pic') || '');
         $('#cp_contact').val($sel.data('contact') || '');
         $('#cp_alamat').val($sel.data('alamat') || '');
+    });
+
+    // Delivery To change → load Qty (oat-qty)
+    $('#cp_delivery_to').on('change', function() {
+        var lokasiName = $(this).val();
+        var vendorId = $('#cp_vendor_name option:selected').data('vendor-id');
+        loadOatQty(vendorId, lokasiName);
+    });
+
+    // Qty (oat) change → set hidden qty for submit, load Unit Price (value)
+    $('#cp_qty').on('change', function() {
+        var $opt = $(this).find('option:selected');
+        var oatId = $opt.val();
+        var oatVal = $opt.data('oat');
+        $('#cp_qty_submit').val(oatVal || '');
+        loadOatValue(oatId);
     });
 
     // Track manual edit on vendor PO
@@ -359,13 +486,16 @@ $(document).ready(function(){
         $('#po_number').val(customerPo); // Store customer_po
         
         if (!poId) {
-            $('#cp_qty').val('');
             $('#cp_dn_no').val('');
             $('#cp_nama_customer').val('');
             $('#select-po').removeData('no-seq');
             $('#cp_vendor_po').data('user-edited', false);
-            // Reset manually-edited flag untuk PPN
             $('#cp_ppn').removeData('manually-edited');
+            $('#form-create-po-transportir').removeData('wilayah-id');
+            loadVendorByWilayah(null);
+            loadOatLokasi(null);
+            $('#cp_qty_submit').val('');
+            $('#cp_harga').val(''); $('#cp_harga_raw').val('');
             return;
         }
         
@@ -406,7 +536,12 @@ $(document).ready(function(){
                         $('#cp_nama_customer').val('');
                         console.log('No nama_customer found in Customer PO validation response'); // Debug log
                     }
-                    
+                    // Load Vendor Name dropdown by wilayah from response
+                    var wilayah = res.data.wilayah != null ? res.data.wilayah : (res.data.wilayah_id != null ? res.data.wilayah_id : null);
+                    loadVendorByWilayah(wilayah);
+                    // Simpan wilayah_id dari Customer PO untuk API lokasi (Delivery To)
+                    var wilayahId = res.data.wilayah_id != null ? res.data.wilayah_id : (res.data.wilayah != null ? res.data.wilayah : null);
+                    $('#form-create-po-transportir').data('wilayah-id', wilayahId);
                     // Reset manually-edited flag untuk PPN (karena PO berubah, reset ke auto-calc)
                     $('#cp_ppn').removeData('manually-edited');
                 } else {
@@ -414,8 +549,9 @@ $(document).ready(function(){
                     $('#cp_dn_no').val('');
                     $('#cp_nama_customer').val('');
                     $('#select-po').removeData('no-seq');
-                    // Reset manually-edited flag untuk PPN
                     $('#cp_ppn').removeData('manually-edited');
+                    $('#form-create-po-transportir').removeData('wilayah-id');
+                    loadVendorByWilayah(null);
                 }
             },
             error: function(xhr) {

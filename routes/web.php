@@ -134,6 +134,7 @@ Route::view('approval-center', 'approval.index')->name('approval_center')->middl
 Route::view('good-receipt', 'good_receipt.index')->name('good_receipt')->middleware('permission:sph.menu');
 Route::view('delivery-request', 'delivery_request.index')->name('delivery_request')->middleware('permission:log.menu');
 Route::view('delivery-note', 'delivery_note.index')->name('delivery_note')->middleware('permission:log.menu');
+Route::view('oat-transportir', 'oat_transportir.index')->name('oat-transportir')->middleware('permission:log.menu');
 Route::view('cetak-po', 'purchase_order.index')->name('cetak-po')->middleware('permission:fin.menu');
 Route::view('bayar-po', 'purchase_order.bayar')->name('bayar-po')->middleware('permission:fin.menu');
 Route::view('purchase-order', 'purchase_order.purchase_order')->name('purchase_order.index')->middleware('permission:fin.menu');

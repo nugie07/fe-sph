@@ -157,6 +157,7 @@
                                         <th>Format</th>
                                         <th>Alias</th>
                                         <th>Nama</th>
+                                        <th>Wilayah</th>
                                         <th>PIC</th>
                                         <th>Contact</th>
                                         <th>Email</th>
@@ -221,9 +222,17 @@
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
+                                <label for="wilayah" class="form-label">Wilayah</label>
+                                <select class="form-control" id="wilayah" name="wilayah_id">
+                                    <option value="">Pilih Wilayah</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
                                 <label for="email" class="form-label">Email</label>
                                 <input type="email" class="form-control" id="email" name="email" required>
                             </div>
+                        </div>
+                        <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="category" class="form-label">Category</label>
                                 <select class="form-control" id="category" name="category" required>
@@ -295,9 +304,10 @@
                 }
             });
 
-            // Load tipe options when modal is shown
+            // Load tipe and wilayah options when modal is shown
             $('#vendorModal').on('show.bs.modal', function() {
                 loadTipeOptions();
+                loadWilayahOptions();
             });
 
             // Auto-generate format when tipe or alias changes
@@ -372,6 +382,12 @@
                     { data: 'format' },
                     { data: 'alias' },
                     { data: 'nama' },
+                    {
+                        data: function(row) {
+                            return row.wilayah != null ? row.wilayah : (row.Wilayah != null ? row.Wilayah : '-');
+                        },
+                        defaultContent: '-'
+                    },
                     { data: 'pic' },
                     { data: 'contact_no' },
                     { data: 'email' },
@@ -456,6 +472,7 @@
                 $('#email').val(vendorData.email);
                 $('#address').val(vendorData.address);
                 $('#category').val(vendorData.category);
+                $('#vendorForm').data('presetWilayahId', vendorData.wilayah_id || '');
                 // Generate format after setting tipe and alias
                 setTimeout(function() {
                     generateFormat();
@@ -464,6 +481,8 @@
                 $('#vendorForm')[0].reset();
                 $('#vendor_id').val('');
                 $('#format').val('');
+                $('#wilayah').val('');
+                $('#vendorForm').removeData('presetWilayahId');
             }
 
             $('#vendorModal').modal('show');
@@ -493,6 +512,33 @@
                 })
                 .fail(function(xhr) {
                     console.error('Failed to load tipe options:', xhr);
+                });
+        }
+
+        function loadWilayahOptions() {
+            $.get('/api/master-wilayah')
+                .done(function(response) {
+                    const $wilayahSelect = $('#wilayah');
+                    $wilayahSelect.find('option:not(:first)').remove();
+                    let data = response;
+                    if (response && response.data) {
+                        data = response.data;
+                    }
+                    if (data && Array.isArray(data)) {
+                        data.forEach(function(item) {
+                            const id = item.id != null ? item.id : item.code;
+                            const nama = item.nama != null ? item.nama : (item.name || item.value || String(id));
+                            $wilayahSelect.append(`<option value="${id}">${nama}</option>`);
+                        });
+                    }
+                    var presetId = $('#vendorForm').data('presetWilayahId');
+                    if (presetId) {
+                        $wilayahSelect.val(presetId);
+                        $('#vendorForm').removeData('presetWilayahId');
+                    }
+                })
+                .fail(function(xhr) {
+                    console.error('Failed to load wilayah options:', xhr);
                 });
         }
 
@@ -526,7 +572,8 @@
                 contact_no: $('#contact_no').val(),
                 email: $('#email').val(),
                 address: $('#address').val(),
-                category: $('#category').val()
+                category: $('#category').val(),
+                wilayah_id: $('#wilayah').val() || null
             };
 
             const vendorId = $('#vendor_id').val();
