@@ -272,7 +272,7 @@ $(document).ready(function(){
             if ($select.hasClass('select2-hidden-accessible')) $select.trigger('change.select2');
             return;
         }
-        $.get('/api/transporter', { category: 2, wilayah: wilayah })
+        $.get('/api/transporter', { category: 2 })
             .done(function(res){
                 var list = res.data || res || [];
                 $select.empty().append('<option value="">Pilih Vendor</option>');
@@ -663,6 +663,13 @@ $(document).ready(function(){
             payload.dn_no = $('#cp_dn_no').val();
         }
 
+        var oatId = $('#cp_qty').val();
+        var oatUpdatePayload = {
+            name: $('#cp_delivery_to').val() || '',
+            oat: $('#cp_qty_submit').val() || '',
+            value: String($('#cp_harga_raw').val() || '')
+        };
+
         $.ajax({
             url: '/api/purchase-order/po-transporter',
             method: 'POST',
@@ -672,15 +679,43 @@ $(document).ready(function(){
                 'Accept': 'application/json'
             },
             success: function(res) {
-                Swal.fire('Berhasil', res.message || 'Operasi berhasil', 'success')
-                    .then(function() {
-                        window.location.href = '{{ route("purchase_order.index") }}';
+                if (oatId && oatUpdatePayload.name) {
+                    $.ajax({
+                        url: '/api/oat-transportir/' + oatId + '/update',
+                        method: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify(oatUpdatePayload),
+                        headers: {
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                            'Accept': 'application/json'
+                        },
+                        success: function() {
+                            Swal.fire('Berhasil', res.message || 'Operasi berhasil', 'success')
+                                .then(function() {
+                                    window.location.href = '{{ route("purchase_order.index") }}';
+                                });
+                        },
+                        error: function(xhr) {
+                            Swal.fire('Gagal', xhr.responseJSON?.message || 'Update OAT gagal', 'error');
+                        },
+                        complete: function() {
+                            $btn.prop('disabled', false);
+                            $btn.find('.spinner-border').addClass('d-none');
+                            $btn.find('.txt').removeClass('d-none');
+                        }
                     });
+                } else {
+                    Swal.fire('Berhasil', res.message || 'Operasi berhasil', 'success')
+                        .then(function() {
+                            window.location.href = '{{ route("purchase_order.index") }}';
+                        });
+                    $btn.prop('disabled', false);
+                    $btn.find('.spinner-border').addClass('d-none');
+                    $btn.find('.txt').removeClass('d-none');
+                }
             },
             error: function(xhr) {
                 Swal.fire('Gagal', xhr.responseJSON?.message || 'Terjadi kesalahan', 'error');
-            },
-            complete: function() {
                 $btn.prop('disabled', false);
                 $btn.find('.spinner-border').addClass('d-none');
                 $btn.find('.txt').removeClass('d-none');
