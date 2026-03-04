@@ -134,7 +134,14 @@
                 <div class="invalid-feedback">Field Unit Price wajib diisi.</div>
               </div>
               <div class="col-md-4"><label>Sub Total</label><input type="text" id="cp_sub_total" class="form-control" readonly></div>
-              <div class="col-md-4"><label>PPN</label><input type="text" id="cp_ppn" class="form-control"></div>
+              <div class="col-md-4">
+                <label>PPN</label>
+                <input type="text" id="cp_ppn" class="form-control">
+                <div class="form-check mt-1">
+                  <input class="form-check-input" type="checkbox" id="cp_ppn_include">
+                  <label class="form-check-label" for="cp_ppn_include">include</label>
+                </div>
+              </div>
               <div class="col-md-4">
                 <label>Total</label>
                 <input type="text" id="cp_total" class="form-control" readonly>
@@ -219,11 +226,13 @@ function calcTransportirFields() {
     // Calculate default PPN value
     var valPPNCalculated = subtotal * 0.11;
     
-    // Get actual PPN value (manual edit or calculated)
+    // Checkbox "include" checked = PPN 0; unchecked = PPN sesuai rumus / manual
     var valPPN = 0;
-    
-    // Check if PPN field is manually edited, if not use calculated value
-    if (!$('#cp_ppn').data('manually-edited')) {
+    if ($('#cp_ppn_include').is(':checked')) {
+        valPPN = 0;
+        $('#cp_ppn').val('Rp. 0');
+        $('#cp_ppn_raw').val(0);
+    } else if (!$('#cp_ppn').data('manually-edited')) {
         valPPN = valPPNCalculated;
         $('#cp_ppn').val('Rp. ' + Math.round(valPPN).toLocaleString('id-ID'));
         $('#cp_ppn_raw').val(Math.round(valPPN));
@@ -610,6 +619,11 @@ $(document).ready(function(){
         var numValue = numeric ? parseInt(numeric, 10) : 0;
         $(this).val('Rp. ' + numValue.toLocaleString('id-ID'));
         $('#' + $(this).attr('id') + '_raw').val(numValue);
+        calcTransportirFields();
+    });
+
+    // PPN checkbox "include": checked = PPN 0, unchecked = hitung sesuai rumus
+    $('#cp_ppn_include').on('change', function() {
         calcTransportirFields();
     });
 
