@@ -253,14 +253,22 @@
             return new Intl.NumberFormat('id-ID', {
                 style: 'currency',
                 currency: 'IDR',
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
             }).format(angka || 0);
         }
 
         // Fungsi untuk mendapatkan nilai numerik dari format Rupiah
         function parseRupiah(stringRupiah) {
-            return parseFloat(stringRupiah.replace(/[^0-9]/g, '')) || 0;
+            if (!stringRupiah) return 0;
+            let str = String(stringRupiah).trim().replace(/Rp\s*/gi, '').trim();
+            if (str.includes(',')) {
+                const parts = str.split(',');
+                const integerPart = parts[0].replace(/\./g, '');
+                const decimalPart = parts[1] || '00';
+                return parseFloat(integerPart + '.' + decimalPart) || 0;
+            }
+            return parseFloat(str.replace(/\./g, '')) || 0;
         }
 
         // Fungsi utama untuk menghitung total
@@ -281,23 +289,16 @@
 
         // --- Event Listeners ---
 
-        // PERBAIKAN: Event listener untuk input manual harga dasar
+        // Input harga dasar: format hanya saat blur agar koma (,) bisa dipakai
         $('#price_liter_display').on('input', function(e) {
-            // 1. Ambil nilai numerik dari input
             let rawValue = parseRupiah($(this).val());
-
-            // 2. Update input tersembunyi dengan nilai numerik
             $('#price_liter_hidden').val(rawValue);
-
-            // 3. Format ulang input yang terlihat
-            // Simpan posisi kursor agar tidak loncat
-            let cursorPos = this.selectionStart;
-            let originalLength = this.value.length;
+            calculateTotal();
+        });
+        $('#price_liter_display').on('blur', function() {
+            let rawValue = parseRupiah($(this).val());
+            $('#price_liter_hidden').val(rawValue);
             $(this).val(formatRupiah(rawValue));
-            let newLength = this.value.length;
-            this.setSelectionRange(cursorPos + (newLength - originalLength), cursorPos + (newLength - originalLength));
-
-            // 4. Panggil kalkulasi total
             calculateTotal();
         });
 
@@ -310,15 +311,16 @@
             calculateTotal();
         });
 
-        // Event listener untuk OAT input
+        // OAT input: format hanya saat blur agar koma (,) bisa dipakai
         $('#oat_display').on('input', function(){
             let rawValue = parseRupiah($(this).val());
             $('#oat_hidden').val(rawValue);
-            let cursorPos = this.selectionStart;
-            let originalLength = this.value.length;
+            calculateTotal();
+        });
+        $('#oat_display').on('blur', function(){
+            let rawValue = parseRupiah($(this).val());
+            $('#oat_hidden').val(rawValue);
             $(this).val(formatRupiah(rawValue));
-            let newLength = this.value.length;
-            this.setSelectionRange(cursorPos + (newLength - originalLength), cursorPos + (newLength - originalLength));
             calculateTotal();
         });
 
