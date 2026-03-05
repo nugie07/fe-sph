@@ -221,7 +221,7 @@ function calcTransportirFields() {
     var harga = parseFloat($('#cp_harga_raw').val()) || 0;
     var transport = parseFloat($('#cp_transport_raw').val()) || 0;
 
-    var subtotal = (qty * harga)
+    var subtotal = (qty * harga) * 1000
     
     // Calculate default PPN value
     var valPPNCalculated = subtotal * 0.11;
