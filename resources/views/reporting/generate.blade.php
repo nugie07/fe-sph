@@ -1,3 +1,7 @@
+@php
+use App\Helpers\PermissionHelper;
+$hasReportingDropdown = PermissionHelper::hasPermission('reporting.dropdown');
+@endphp
 @extends('layout.master')
 
 @section('css')
@@ -41,18 +45,27 @@
                                     <label class="form-label required">Tipe Report</label>
                                     <select class="form-select" id="report_type" name="report_type" required>
                                         <option value="">Pilih Tipe</option>
+                                        @if($hasReportingDropdown)
                                         <option value="ar">AR</option>
+                                        @endif
                                         <option value="ap">AP</option>
                                     </select>
+                                    @if(!$hasReportingDropdown)
+                                    <small class="text-muted">Akses terbatas: hanya AP (Transportir).</small>
+                                    @endif
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Tipe (AP)</label>
                                     <select class="form-select" id="ap_sub_type" name="ap_sub_type" disabled>
+                                        @if($hasReportingDropdown)
                                         <option value="all">All</option>
                                         <option value="supplier">Supplier</option>
                                         <option value="transportir">Transportir</option>
+                                        @else
+                                        <option value="transportir">Transportir</option>
+                                        @endif
                                     </select>
-                                    <small class="text-muted">Hanya aktif jika Tipe Report = AP</small>
+                                    <small class="text-muted">Hanya aktif jika Tipe Report = AP{{ !$hasReportingDropdown ? ' (akses terbatas: Transportir saja)' : '' }}</small>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Date From</label>
@@ -89,8 +102,10 @@
                 var val = $(this).val();
                 if (val === 'ap') {
                     $('#ap_sub_type').prop('disabled', false);
+                    var hasAll = $('#ap_sub_type option[value="all"]').length > 0;
+                    if (!hasAll) $('#ap_sub_type').val('transportir');
                 } else {
-                    $('#ap_sub_type').prop('disabled', true).val('all');
+                    $('#ap_sub_type').prop('disabled', true).val($('#ap_sub_type option:first').val());
                 }
             });
 
@@ -114,7 +129,7 @@
                     date_to: dateTo || null
                 };
                 if (reportType === 'ap') {
-                    payload.ap_sub_type = $('#ap_sub_type').val() || 'all';
+                    payload.ap_sub_type = $('#ap_sub_type').val() || 'transportir';
                 }
 
                 var $btn = $('#btn-submit-report');

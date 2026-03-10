@@ -1,3 +1,7 @@
+@php
+use App\Helpers\PermissionHelper;
+$hasReportingDropdown = PermissionHelper::hasPermission('reporting.dropdown');
+@endphp
 @extends('layout.master')
 
 @section('css')
@@ -79,6 +83,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         var exportTable;
+        var hasReportingDropdown = {{ $hasReportingDropdown ? 'true' : 'false' }};
 
         $(document).ready(function() {
             initDataTable();
@@ -95,9 +100,15 @@
                     url: '/api/reporting/exports',
                     type: 'GET',
                     dataSrc: function(res) {
-                        if (res && res.data) return res.data;
-                        if (Array.isArray(res)) return res;
-                        return [];
+                        var list = (res && res.data) ? res.data : (Array.isArray(res) ? res : []);
+                        if (!hasReportingDropdown && Array.isArray(list)) {
+                            list = list.filter(function(row) {
+                                var rt = (row.report_type || '').toLowerCase();
+                                var apSub = (row.ap_sub_type || '').toLowerCase();
+                                return rt === 'ap' && apSub === 'transportir';
+                            });
+                        }
+                        return list;
                     },
                     error: function() {
                         return [];
@@ -164,12 +175,16 @@
                             var status = (row.status || '').toLowerCase();
                             var filename = row.filename || '';
                             var canDownload = status === 'ready' || (filename && filename.length > 0);
+                            var reportType = (row.report_type || '').toLowerCase();
+                            var apSubType = (row.ap_sub_type || '').toLowerCase();
+                            var allowDownload = canDownload && (hasReportingDropdown || (reportType === 'ap' && apSubType === 'transportir'));
                             var url = row.download_url;
-                            if (canDownload && !url) url = '/api/reporting/exports/' + id + '/download';
-                            if (canDownload) {
+                            if (allowDownload && !url) url = '/api/reporting/exports/' + id + '/download';
+                            if (allowDownload) {
                                 var label = (filename && filename.length) ? filename : 'Download Report';
                                 return '<a href="' + url + '" class="btn btn-sm btn-success" target="_blank" rel="noopener">' + label + '</a>';
                             }
+                            if (canDownload && !allowDownload) return '<span class="text-muted">No access</span>';
                             return '<span class="text-muted">-' + (status === 'failed' && row.error ? ' ' + row.error : '') + '</span>';
                         }
                     }
