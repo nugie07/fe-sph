@@ -155,6 +155,10 @@ Route::view('user-log', 'user_management.userlog')->name('user-log')->middleware
 Route::view('invoice', 'invoice.index')->name('invoice')->middleware('permission:fin.menu');
 Route::view('master-engine', 'user_management.workflow')->name('master-engine')->middleware('permission:master.engine');
 
+// Reporting
+Route::view('reporting/generate-report', 'reporting.generate')->name('reporting.generate')->middleware('permission:reporting.menu');
+Route::view('reporting/download-report', 'reporting.download')->name('reporting.download')->middleware('permission:reporting.menu');
+
 // Invoice routes
 Route::get('/invoice/create', [AuthController::class, 'createInvoice'])->name('invoices.create');
 Route::get('/invoice/view', [AuthController::class, 'viewInvoice'])->name('invoices.view');

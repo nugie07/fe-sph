@@ -92,6 +92,16 @@ use App\Helpers\PermissionHelper;
             </li>
             @endif
 
+            {{-- Menu Reporting --}}
+            @if(PermissionHelper::hasMenuAccess('reporting.menu'))
+            <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title" href="javascript:void(0)"><i data-feather="file-text"></i><span>Reporting</span></a>
+              <ul class="sidebar-submenu">
+                <li><a href="{{ route('reporting.generate') }}">Generate Report</a></li>
+                <li><a href="{{ route('reporting.download') }}">Download Report</a></li>
+              </ul>
+            </li>
+            @endif
+
             {{-- Menu Master --}}
             @if(PermissionHelper::hasMenuAccess('master.menu'))
             <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title" href="javascript:void(0)"><i data-feather="settings"></i><span>Master Data</span></a>
