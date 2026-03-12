@@ -159,6 +159,9 @@ Route::view('master-engine', 'user_management.workflow')->name('master-engine')-
 Route::view('reporting/generate-report', 'reporting.generate')->name('reporting.generate')->middleware('permission:reporting.menu');
 Route::view('reporting/download-report', 'reporting.download')->name('reporting.download')->middleware('permission:reporting.menu');
 
+// Finance Center - Approved SPH
+Route::view('finance/sph-approved', 'finance.sph_approved')->name('finance.sph_approved')->middleware('permission:fin.menu');
+
 // Invoice routes
 Route::get('/invoice/create', [AuthController::class, 'createInvoice'])->name('invoices.create');
 Route::get('/invoice/view', [AuthController::class, 'viewInvoice'])->name('invoices.view');

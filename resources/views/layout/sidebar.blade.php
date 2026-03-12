@@ -69,6 +69,9 @@ use App\Helpers\PermissionHelper;
                 @if(PermissionHelper::hasSubMenuAccess('fin.menu', 'fin.po.menu'))
                 <li><a href="{{route('purchase_order.index')}}">Purchase Order</a></li>
                 @endif
+                @if(PermissionHelper::hasMenuAccess('fin.menu'))
+                <li><a href="{{route('finance.sph_approved')}}">Approved SPH</a></li>
+                @endif
               </ul>
             </li>
             @endif
